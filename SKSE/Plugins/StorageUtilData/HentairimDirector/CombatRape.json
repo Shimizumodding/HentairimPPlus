@@ -1,0 +1,20 @@
+{
+   "int":{
+      "enablehentairimcombatrape":0,
+      "enablefemalefollowercombatrape":0,
+      "enablemalefollowercombatrape":0,
+      "combatrapecooldownhours":3,
+      "onhitcooldownchecksseconds":3,
+      "femalexfemaleusemalepositions":1,
+      "futaxfutausemalepositions":1,
+      "futaxmaleusefemalefemdompositions":1,
+      "malexmaleusefemalepositions":1,
+      "malexfutausefemalepositions":1
+   },
+   "float":{
+      "minhealthpercentagetotrigger":0.05,
+      "maxhealthpercentagetotrigger":0.5,
+      "chancetotriggeronpowerattack":0.10,
+      "chancetotriggeronnormalattack":0.05
+   }
+}

@@ -1,0 +1,20 @@
+{
+   "int":{
+      "enableaggressionresistance":1,
+      "enablepcresistancedamage":1,
+      "enablemalenpcresistancedamage":1,
+      "enablefemalenpcresistancedamage":1,
+      "enablecreaturenpcresistancedamage":1,
+      "pcnonvictimresistancedamagemultiplier":20,
+      "npcnonvictimresistancedamagemultiplier":30,
+      "pcvictimresistancedamagemultiplier":110,
+      "npcvictimresistancedamagemultiplier":130,
+      "pcmaxresistance":500,
+      "pcrecoverresistancepercentageperhour":10,
+      "npcrecoverresistancepercentageperhour":5,
+      "pcbrokenpointsfromresistancebreak":60,
+      "npcbrokenpointsfromresistancebreak":40,
+      "hugeppresistancedamagemultiplier":200, 
+      "enableprintdebug":0
+   }
+}

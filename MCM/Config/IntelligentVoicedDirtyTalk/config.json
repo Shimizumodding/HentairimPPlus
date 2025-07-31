@@ -1,0 +1,41 @@
+{
+   "modName":"IntelligentVoicedDirtyTalk",
+   "displayName":"Int. Voiced Dirty Talk",
+   "pages":[
+      {
+         "pageDisplayName":"Hentairim Sexlab Moan Management",
+         "cursorFillMode":"topToBottom",
+         "content":[
+            {
+               "text":"What To Do With SexLab Voices?",
+               "type":"header"
+            },
+            {
+               "id":"bMuteSexLabVoices:VoiceSystemManagement",
+               "text":"Mute SexLab Voices While Playing",
+               "type":"toggle",
+               "help":"If on, Sexlab Moans will Stop Playing for Everyone. if You Only want to disable sexlab voices for PC, use Hentairim Sound Effects or dedicate a empty/volumed 0 sexlab sound slot for PC",
+               "valueOptions":{
+                  "sourceType":"ModSettingBool"
+               }
+            },
+            {
+               "id":"sUnmuteSexLabVoices:DoNotTouch",
+               "text":"",
+               "type":"text",
+               "help":"Click this to unmute the SexLab voices NOW. You can do this anytime, but its definitely a good idea to do this before uninstalling the mod to be safe. Worst case you'll have to reinstall the mod just to click this button.",
+               "valueOptions":{
+                  "sourceType":"ModSettingString"
+               },
+               "action":{
+                  "type":"CallFunction",
+                  "function":"UnmuteSexLabVoicesFromMCM",
+                  "params":[
+                     
+                  ]
+               }
+            }
+         ]
+      }
+   ]
+}

@@ -1,0 +1,22 @@
+{
+   "float":{
+      "pcnonintenseexpressionupdateinseconds":0.7,
+      "pcintenseexpressionupdateinseconds":0.4,
+      "npcnonintenseexpressionupdateinseconds":0.7,
+      "npcintenseexpressionupdateinseconds":0.4
+   },
+   "int":{
+      "enableexpressions":1,
+      "enablepc":1,
+      "enablefemalenpc":1,
+      "enablemalenpc":1,
+      "enabletongue":1,
+      "fhutonguetype":7,
+      "removetongueonblowjob":0,
+      "cunusetongue":1,
+      "enableahegao":1,
+      "chancetostickouttongueduringintense":2,
+      "chancetostickouttongueduringattacking":3,
+      "printdebug":0
+   }
+}

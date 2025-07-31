@@ -1,0 +1,8 @@
+Slot M1 = male Even Tone
+Slot M2 = Male Argonian
+Slot M3 = Male Brute
+Slot M4 = Male Nord
+Slot M5 = Male Condescending
+Slot M6 = Male Dark Elf
+Slot M7 = Male Khajitt
+Slot M8 = Male Orc

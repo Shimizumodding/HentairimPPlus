@@ -1,0 +1,12 @@
+{
+   "int":{
+      "enableoninuslactislactate":0,
+      "chancetolactateduringorgasm":70,
+      "chancetolactateduringnonintense":10,
+      "chancetolactateduringintense":30,
+      "mintimetolactate":6,
+      "maxtimetolactate":15,
+      "levelduringnonintense":1,
+      "levelduringintense":3
+   }
+}

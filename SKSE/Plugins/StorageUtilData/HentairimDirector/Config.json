@@ -1,0 +1,20 @@
+{
+   "int":{
+      "directortoolskey":35,
+      "modifierkey":42,
+      "adjustforwardkey":72,
+      "adjustsidewayskey":75,
+      "adjustupdownkey":76,
+      "advancekey":57,
+      "adjustrotationkey":77,
+      "enablearmorswap":1,
+      "enableautoadvancestage":1,
+      "enablehentairimscaling":1,
+      "npcchangescenewhenpcisvictim":1,
+      "resetsmp":0,
+      "resetsexassignment":1,
+      "chancefornpctochangepenetrationscene":10,
+      "soshugeppsize":6,
+      "printdebug":1
+   }
+}

@@ -1,0 +1,7 @@
+{
+   "int":{
+      "enablestagemaker":1,
+      "chancetousecustomstage":100,
+      "skipfirststageasap":1
+   }
+}
