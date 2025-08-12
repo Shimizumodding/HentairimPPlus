@@ -6,7 +6,7 @@ SexLabThread CurrentThread = None
 actor Actorref
 actor playerref
 actor[] actorlist
-
+bool isplayer
 Bool OnHitprocessing
 
 Spell CombatRapeTrackerSpell
@@ -19,7 +19,7 @@ Event OnEffectStart(Actor akTarget, Actor akCaster)
 	PerformInitialization()
 	Actorref = akTarget
 	playerref = game.getplayer()
-	
+	isplayer = Actorref == playerref
 EndEvent
 Bool InScene
 int enablehentairimcombatrape
@@ -37,14 +37,14 @@ float minhealthpercentagetotrigger
 float maxhealthpercentagetotrigger
 float chancetotriggeronpowerattack
 float chancetotriggeronnormalattack
-
+float pccombatrapetimermodifier
 float health
 float LastHitTime
 Float LastRapeTime
 
 Function PerformInitialization()
 	;register events
-	RegisterForTheEventsWeNeed()
+	;RegisterForTheEventsWeNeed()
 	CombatRapeTrackerSpell =  Game.GetFormFromFile(0x801, "Hentairim Director.esp") as Spell
 	;load Combat config
 	enablehentairimcombatrape = JsonUtil.GetIntValue(CombatRapeFile, "enablehentairimcombatrape" ,0)
@@ -61,13 +61,7 @@ Function PerformInitialization()
 	maxhealthpercentagetotrigger = JsonUtil.GetFloatValue(CombatRapeFile, "maxhealthpercentagetotrigger" ,0)
 	chancetotriggeronpowerattack = JsonUtil.GetFloatValue(CombatRapeFile, "chancetotriggeronpowerattack" ,0)
 	chancetotriggeronnormalattack = JsonUtil.GetFloatValue(CombatRapeFile, "chancetotriggeronnormalattack" ,0)
-	
-EndFunction
-
-Function RegisterForTheEventsWeNeed()
-
-	RegisterForModEvent("AnimationEnd", "HentairimCombatRapeOnSceneEnd")
-	RegisterForModEvent("AnimationStart", "HentairimCombatRapeOnStageStart")
+	pccombatrapetimermodifier = JsonUtil.GetFloatValue(CombatRapeFile, "pccombatrapetimermodifier" ,0)
 	
 EndFunction
 
@@ -105,26 +99,19 @@ Event OnHit(ObjectReference akAggressor, Form akSource, Projectile akProjectile,
 
 	Utility.wait(2)
 	;trigger combat rape
+	SetHentairimTimerandSceneType()
+
 	string applytags = ChangeAggressorandVictimSex(Aggressor , actorref)
 	actor[] ActorsToFuck = new actor[2]
 	Actorstofuck[0] = Actorref
 	Actorstofuck[1] = Aggressor
 
 	sexlab.startscene(Actorstofuck,applytags,actorref)
-
+	
 	LastRapeTime = sexlabutil.GetCurrentGameTimeHours()
 	OnHitprocessing = false
 EndEvent
 
-Event HentairimCombatRapeOnSceneEnd(string eventName, string argString, float argNum, form sender)
-	
-EndEvent
-
-Event HentairimCombatRapeOnStageStart(string eventName, string argString, float argNum, form sender)
-	
-	currentthread = Sexlab.GetThreadByActor(actorref) ;CURRENT THREAD
-	
-EndEvent
 
 Bool Function HealthWithinRapeLimit(actor char)
 	float basehealth = char.GetBaseActorValue("Health")
@@ -184,6 +171,11 @@ Bool Function CanTriggerOnAttack(Bool isPowerAttack , bool isBlocked)
 	endIf
 EndFunction
 
+Function SetHentairimTimerandSceneType()
+	storageutil.setfloatvalue(none,"HentairimTimerModifier",pccombatrapetimermodifier)
+	
+	storageutil.Setintvalue(none,"HentairimNextUseLinearScene",1)
+endfunction
 
 string Function ChangeAggressorandVictimSex(actor Aggressoractor,actor Victimactor)
 	int AggressorGender = Sexlab.getsex(Aggressoractor)
@@ -208,6 +200,9 @@ string Function ChangeAggressorandVictimSex(actor Aggressoractor,actor Victimact
 	elseif  AggressorGender == 0 && VictimGender == 0 && malexmaleusefemalepositions == 1
 		sexlab.treatasfemale(Victimactor)
 		tagstoapply = "Aggressive"
+	elseif AggressorGender > 2
+		sexlab.treatasfemale(Victimactor)
+		tagstoapply = "~2ASVP,~3ASVP,~3AFVP,~4AFVP,~5AFVP,~6AFVP,~7AFVP,-2ASCG,-3ASCG,-4ASCG"
 	endif
 	return tagstoapply
 EndFunction

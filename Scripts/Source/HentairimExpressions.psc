@@ -26,8 +26,7 @@ Event OnEffectStart(Actor akTarget, Actor akCaster)
 EndEvent
 
 Event OnEffectFinish(Actor akTarget, Actor akCaster)
-	resetexpressions()
-	RemoveTongue()
+
 EndEvent
 
 Function PerformInitialization()
@@ -72,14 +71,13 @@ EndFunction
 Function RegisterForTheEventsWeNeed()
 	printdebug("Registering Event")
 	RegisterForModEvent("AnimationEnd", "ExpressionsSceneEnd")
-	
+	RegisterForModEvent("SexLabOrgasmSeparate", "ExpressionsOrgasm") 
 	RegisterForModEvent("StageStart", "ExpressionsOnStageStart")
 
 EndFunction
 
 Event ExpressionsSceneEnd(string eventName, string argString, float argNum, form sender);
-	PrintDebug("Scene end")
-	RemoveExpressions()
+
 EndEvent
 
 
@@ -89,14 +87,12 @@ EndEvent
 
 float LastOrgasmtime
 
-Event ExpressionsOrgasm(string eventName, string argString, float argNum, form sender)
-
-	If argString as Int != ThreadID
+Event ExpressionsOrgasm(Form akactor, Int thread)
+	If akactor != actorRef
 		Return
 	EndIf
 	IsOrgasming = true
 	LastOrgasmtime =  CurrentThread.GetTimeTotal()
-	printdebug("LastOrgasmtime : " + LastOrgasmtime)
 
 EndEvent
 
@@ -455,8 +451,6 @@ else
 		if FHUTongueTypeArmor
 			actorref.addItem(FHUTongueTypeArmor , abSilent=true)
 			actorref.EquipItem(FHUTongueTypeArmor , abSilent=true)
-		else
-			WritetoErrorlogs("Expressions",actorref.getdisplayname() + " Tongue is enabled but not found! Check your FHU configuration, and Tongue type values must be between 1-10")
 		Endif
 	
 	endif
@@ -609,11 +603,12 @@ return HentaiScenario
 EndFunction
 
 function resetexpressions()
-printdebug("Reset Expressions")
+
 MfgConsoleFuncExt.resetmfg(actorref) 
 if hasmfee || HasMFEEVanillaRace
 	MuFacialExpressionExtended.RevertExpression(actorref)
 endif
+
 endfunction
 
 
@@ -775,17 +770,18 @@ Function HentairimPrepare()
 	printdebug("--------------------Hentairim Prepare Initial Data END-----------------")
 endfunction
 
-Bool Function HentairimUpdateStageData()
-	printdebug("--------------------Hentairim Update Stage Data START-----------------")
-	bool NewLabelsUpdated = false
-	if CurrentSceneID != CurrentThread.GetActiveScene() || currentStageID != CurrentThread.GetActiveStage()
-		
+float DirectorLastLabelTime
+
+Function HentairimUpdateStageData()
+	printdebug("Updating Labels")
+
+	if DirectorLastLabelTime != MasterScript.GetDirectorLastLabelTime()	
 		printdebug("Animation or Stage is Different. Updating Stage Data")
 		CurrentSceneID = CurrentThread.GetActiveScene()
 		currentStageID = CurrentThread.GetActiveStage()
 		currentstage = GetLegacyStageNum(CurrentSceneID, currentStageID)
 		
-		UpdateLabels(CurrentSceneID , currentstage , CurrentThread.GetPositionIdx(Actorref))	
+		UpdateLabels(actorref)	
 		Interactiontypes = MasterScript.GetActorInteractiontypes(actorref)
 		PartnerInteractiontypes = MasterScript.GetActorPartnerInteractiontypes(actorref)
 		printdebug("PC Thread Position : " + CurrentThread.GetPositionIdx(Actorref))
@@ -797,11 +793,9 @@ Bool Function HentairimUpdateStageData()
 		if IsSuckingoffOther()
 			unequipmask(actorref)
 		endif
-		
-		NewLabelsUpdated = true
+		DirectorLastLabelTime = MasterScript.GetDirectorLastLabelTime()
 	endif
-	printdebug("--------------------Hentairim Update Stage Data END-----------------")
-	return NewLabelsUpdated
+
 endfunction
 
 String Stimulationlabel
@@ -812,13 +806,14 @@ string PenetrationLabel
 string Labelsconcat
 ;sexLabThreadController.ActorAlias(actorInQuestion).GetFullEnjoyment()
 
-Function UpdateLabels(string anim , int stage , int actorpos = 0 )
+Function UpdateLabels(actor char)
  	printdebug("--------------------Hentairim Updating Labels START-----------------")
- Stimulationlabel = HentairimTags.StimulationLabel(anim , stage , actorpos)
- PenisActionLabel  = HentairimTags.PenisActionLabel(anim , stage , actorpos)
- OralLabel  = HentairimTags.OralLabel(anim , stage , actorpos)
- EndingLabel  = HentairimTags.EndingLabel(anim , stage , actorpos)
- PenetrationLabel = HentairimTags.PenetrationLabel(anim , stage , actorpos)
+	
+ Stimulationlabel = MasterScript.GetStimulationlabel(char)
+ PenisActionLabel  = MasterScript.GetPenisActionLabel(char)
+ OralLabel  = MasterScript.GetOralLabel(char)
+ EndingLabel  = MasterScript.GetEndingLabel(char)
+ PenetrationLabel = MasterScript.GetPenetrationLabel(char)
  
  Labelsconcat = "1" +Stimulationlabel + "1" + PenisActionLabel + "1" + OralLabel + "1" + PenetrationLabel + "1" + EndingLabel
  PrintDebug("Stimulationlabel :" + Stimulationlabel + ", PenisActionLabel :" +  PenisActionLabel  + ", OralLabel :" +  OralLabel  + ", PenetrationLabel :" +  PenetrationLabel  + ", EndingLabel :" +  EndingLabel)
@@ -876,7 +871,7 @@ Bool Function IsGivingVaginalPenetration()
 endfunction
 
 Bool Function IsLeadIN()
-	return stringutil.find(Labelsconcat ,"1F") == -1 || stringutil.find(Labelsconcat ,"1S") == -1
+	return Stimulationlabel == "LDI" && PenisActionlabel == "LDI" && Penetrationlabel == "LDI" && OralLabel == "LDI" && EndingLabel == "LDI" 
 endfunction 
 
 Bool Function IsGettingSuckedoff()
@@ -893,6 +888,11 @@ endfunction
 
 
 Bool function IshugePP()
+	if position != 0
+		return false
+	endif
+	return masterscript.ishugepp(actorref)
+;/
 	;no Huge PP effects if not receiving in position 0
 	if position != 0
 		return false
@@ -929,6 +929,7 @@ Bool function IshugePP()
     endif
     return false
   endif
+  /;
 EndFunction
 
 

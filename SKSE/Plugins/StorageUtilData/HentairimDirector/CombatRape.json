@@ -12,6 +12,7 @@
       "malexfutausefemalepositions":1
    },
    "float":{
+      "pccombatrapetimermodifier":0.5,
       "minhealthpercentagetotrigger":0.05,
       "maxhealthpercentagetotrigger":0.5,
       "chancetotriggeronpowerattack":0.10,

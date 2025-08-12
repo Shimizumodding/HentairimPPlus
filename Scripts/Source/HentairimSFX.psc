@@ -81,11 +81,11 @@ Event SFXSceneEnd(string eventName, string argString, float argNum, form sender)
 	RemoveSFX()
 EndEvent
 
-Event SFXOnStageStart(string eventName, string argString, float argNum, form sender)
+Event SFXOnStageStart(string eventName, string argString, float argNum, form sender);
 	
 EndEvent
 
-Event SFXOrgasm(string eventName, string argString, float argNum, form sender)
+Event SFXOrgasm(Form actorhavingorgasm, Int thread) 
 	miscutil.printconsole("SFXOnStageStart On Orgasm Fire")	
 EndEvent
 
@@ -454,8 +454,8 @@ Function CalculateAndPlayVelocitySFX()
 	;Bool CanReverseSlushFromInside = False ;must CanImpact before CanReverseSlushFromInside
 ;	Bool CanReverseSlushFromOutside = False ;must CanReverseSlushFromInside before CanReverseSlushFromOutside
 
-	while CurrentSceneID == CurrentThread.GetActiveScene() && currentStageID == CurrentThread.GetActiveStage()
-		;int Stopplayingsound = StorageUtil.GetIntValue(None, "HentairimSFXStop", 0)
+	while Currentthread.getstatus() == 3 && DirectorLastLabelTime == MasterScript.GetDirectorLastLabelTime()  ; CurrentSceneID == CurrentThread.GetActiveScene() && currentStageID == CurrentThread.GetActiveStage()
+
 		velocity = Currentthread.GetVelocity(FuckingPartner, Actorref, FuckingPartnerInteractionType)
 		printdebug("Velocity : masterscript interaction types : " + masterscript.GetActorInteractiontypes(actorref))
 		printdebug("Velocity : " + Velocity + " | lastVelocity : " + LastVelocity + " | FuckingPartnerInteractionType : " + FuckingPartnerInteractionType)
@@ -469,7 +469,8 @@ Function CalculateAndPlayVelocitySFX()
 					else
 						printdebug("ImpactVelocitySFX : is none!")
 					endif
-				else	
+				Endif	
+				
 					printdebug("playing Slush Velocity")
 					SlushVelocitySFX = GetSlushSoundToPlay(FuckingPartnerInteractionType, TimetoThrust)
 					if SlushVelocitySFX != none
@@ -477,7 +478,7 @@ Function CalculateAndPlayVelocitySFX()
 					else
 						printdebug("SlushVelocitySFX : is none!")
 					endif
-				Endif
+				
 				TimetoThrust = 0
 			elseif lastVelocity <= 0 && velocity > 0  ;reversal from outside
 				printdebug("Play Reversal from outside")
@@ -544,7 +545,7 @@ endfunction
 
 Function PlayHentairimSFX()
 	printdebug("Playing Normal Hentairim SFX")
-	while SFXtoPlay && CurrentSceneID == CurrentThread.GetActiveScene() && currentStageID == CurrentThread.GetActiveStage()
+	while Currentthread.getstatus() == 3 && SFXtoPlay && CurrentSceneID == CurrentThread.GetActiveScene() && currentStageID == CurrentThread.GetActiveStage()
 		
 		PlaySound( SFXtoPlay , actorlist[0] , true)
 		utility.wait(0.1)
@@ -630,7 +631,7 @@ endfunction
 
 Bool Function Shouldplaysound()
 
-return IsCunnilingus() || IsKissing() || IsgettingPenetrated() || IsGettingStimulated() || IsSuckingoffOther()
+return IsCunnilingus() || IsKissing() || IsGivingAnalPenetration() || IsGivingVaginalPenetration() || IsGettingStimulated() || IsGettingSuckedoff()
 
 endfunction
 
@@ -667,14 +668,13 @@ endfunction
 bool isintense 
 Function HentairimUpdateStageData()
 
-
-	if CurrentSceneID != CurrentThread.GetActiveScene() || currentStageID != CurrentThread.GetActiveStage()
+	if DirectorLastLabelTime != MasterScript.GetDirectorLastLabelTime()
 		printdebug("Animation or Stage is Different. Updating Stage Data")
 		CurrentSceneID = CurrentThread.GetActiveScene()
 		currentStageID = CurrentThread.GetActiveStage()
 		currentstage = GetLegacyStageNum(CurrentSceneID, currentStageID)
 		
-		UpdateLabels(CurrentSceneID , currentstage , CurrentThread.GetPositionIdx(actorref))
+		UpdateLabels(actorref)
 		isintense = Isintense()
 		printdebug("Thread Position : " + CurrentThread.GetPositionIdx(actorref))
 		printdebug("current Animation : " + CurrentSceneID)
@@ -683,9 +683,10 @@ Function HentairimUpdateStageData()
 		
 		HentairimSFXRefreshSound()
 		UpdateFuckingPartner()
-		StorageUtil.SetIntValue(None, "DirectorSFXUpdate", 0)
 		StageShouldplayClap = (SFXTag == "FC" || SFXTag == "MC"|| SFXTag == "SC" || CurrentThread.HasStageTag("Doggy") || CurrentThread.HasStageTag("DoggyStyle")) && (IsGivingVaginalPenetration() || IsGivingAnalPenetration())
-
+		
+		
+		DirectorLastLabelTime = MasterScript.GetDirectorLastLabelTime()
 		PrintDebug("Stage Should play Impact : " + StageShouldplayClap)
 		
 	endif
@@ -702,16 +703,18 @@ string Labelsconcat
 ;sexLabThreadController.ActorAlias(actorInQuestion).GetFullEnjoyment()
 
 
-
-Function UpdateLabels(string anim , int stage , int actorpos = 0 )
+float DirectorLastLabelTime
+Function UpdateLabels(actor char)
  printdebug("Updating Labels")
- Stimulationlabel = HentairimTags.StimulationLabel(anim , stage , actorpos)
- PenisActionLabel  = HentairimTags.PenisActionLabel(anim , stage , actorpos)
- OralLabel  = HentairimTags.OralLabel(anim , stage , actorpos)
- EndingLabel  = HentairimTags.EndingLabel(anim , stage , actorpos)
- PenetrationLabel = HentairimTags.PenetrationLabel(anim , stage , actorpos)
+  Stimulationlabel = MasterScript.GetStimulationlabel(char)
+ PenisActionLabel  = MasterScript.GetPenisActionLabel(char)
+ OralLabel  = MasterScript.GetOralLabel(char)
+ EndingLabel  = MasterScript.GetEndingLabel(char)
+ PenetrationLabel = MasterScript.GetPenetrationLabel(char)
  MasterInteractiontypes = MasterScript.GetActorInteractiontypes(actorref) ;update interaction types for current stage
 MasterPartnerInteractiontypes = MasterScript.GetActorPartnerInteractiontypes(actorref) ;update Partner interaction types for current stage
+ 
+ 
  printdebug("MasterInteractiontypes : " + MasterInteractiontypes)
  printdebug("MasterPartnerInteractiontypes : " + MasterPartnerInteractiontypes)
  Labelsconcat = "1" +Stimulationlabel + "1" + PenisActionLabel + "1" + OralLabel + "1" + PenetrationLabel + "1" + EndingLabel
@@ -790,6 +793,9 @@ Bool function isDependencyReady(String modname)
 endfunction
 
 Bool function IshugePP()
+
+	return MasterScript.ishugepp(actorref)
+;/
 	;no Huge PP effects if not receiving in position 0
 	;SOS
 	faction SchlongFaction = Game.GetFormFromFile(0xAFF8 , "Schlongs of Skyrim.esp") as Faction
@@ -824,6 +830,7 @@ Bool function IshugePP()
     endif
     return false
   endif
+  /;
 EndFunction
 
 int Function GetLegacyStageNum(String asScene, String asStage)

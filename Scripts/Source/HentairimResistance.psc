@@ -93,7 +93,7 @@ Event OnUpdate()
 	if Sexlab.GetThreadByActor(actorref) == none
 		RemoveResistanceSpell()
 	endif
-		
+	UpdateActorResistanceDebttoCurrent()	
 	if GetResistance() > 0 && IsGettingFucked()
 		
 		int damagetodo = 0
@@ -274,6 +274,14 @@ endif
 endfunction
 
 
+function UpdateActorResistanceDebttoCurrent()
+	float resistancedebt = StorageUtil.GetfloatValue(Actorref, "ActorResistanceDebt" ,0)
+	if resistancedebt > 0
+		AddResistanceDamage(resistancedebt)
+		StorageUtil.SetfloatValue(Actorref, "ActorResistanceDebt" ,0)
+	endif
+EndFunction
+
 
 int function GetResistance()
 
@@ -435,30 +443,26 @@ Function HentairimPrepare()
 
 
 endfunction
-
-Bool Function HentairimUpdateStageData()
+float DirectorLastLabelTime
+Function HentairimUpdateStageData()
 	printdebug("Hentairim Update Stage Data ")
-	bool NewLabelsUpdated = false
-	if CurrentSceneID != CurrentThread.GetActiveScene() || currentStageID != CurrentThread.GetActiveStage()
-		
+
+	if DirectorLastLabelTime != MasterScript.GetDirectorLastLabelTime()	
 		printdebug("Animation or Stage is Different. Updating Stage Data")
 		CurrentSceneID = CurrentThread.GetActiveScene()
 		currentStageID = CurrentThread.GetActiveStage()
 		currentstage = GetLegacyStageNum(CurrentSceneID, currentStageID)
 		
-		UpdateLabels(CurrentSceneID , currentstage , CurrentThread.GetPositionIdx(Actorref))	
+		UpdateLabels(Actorref)	
 		Interactiontypes = MasterScript.GetActorInteractiontypes(actorref)
 		PartnerInteractiontypes = MasterScript.GetActorPartnerInteractiontypes(actorref)
 		printdebug("PC Thread Position : " + CurrentThread.GetPositionIdx(Actorref))
 		printdebug("current Animation : " + CurrentSceneID)
 		printdebug("current StageID : " + currentStageID)
 		printdebug("current stage number: " + currentstage)
-
-		
-		NewLabelsUpdated = true
+		DirectorLastLabelTime = MasterScript.GetDirectorLastLabelTime()
 	endif
-
-	return NewLabelsUpdated
+	
 endfunction
 
 String Stimulationlabel
@@ -469,13 +473,14 @@ string PenetrationLabel
 string Labelsconcat
 ;sexLabThreadController.ActorAlias(actorInQuestion).GetFullEnjoyment()
 
-Function UpdateLabels(string anim , int stage , int actorpos = 0 )
+Function UpdateLabels(actor char)
  	printdebug("Hentairim Updating Labels")
- Stimulationlabel = HentairimTags.StimulationLabel(anim , stage , actorpos)
- PenisActionLabel  = HentairimTags.PenisActionLabel(anim , stage , actorpos)
- OralLabel  = HentairimTags.OralLabel(anim , stage , actorpos)
- EndingLabel  = HentairimTags.EndingLabel(anim , stage , actorpos)
- PenetrationLabel = HentairimTags.PenetrationLabel(anim , stage , actorpos)
+
+ Stimulationlabel = MasterScript.GetStimulationlabel(char)
+ PenisActionLabel  = MasterScript.GetPenisActionLabel(char)
+ OralLabel  = MasterScript.GetOralLabel(char)
+ EndingLabel  = MasterScript.GetEndingLabel(char)
+ PenetrationLabel = MasterScript.GetPenetrationLabel(char)
  
  Labelsconcat = "1" +Stimulationlabel + "1" + PenisActionLabel + "1" + OralLabel + "1" + PenetrationLabel + "1" + EndingLabel
  PrintDebug("Stimulationlabel :" + Stimulationlabel + ", PenisActionLabel :" +  PenisActionLabel  + ", OralLabel :" +  OralLabel  + ", PenetrationLabel :" +  PenetrationLabel  + ", EndingLabel :" +  EndingLabel)
@@ -532,7 +537,7 @@ Bool Function IsGivingVaginalPenetration()
 endfunction
 
 Bool Function IsLeadIN()
-	return stringutil.find(Labelsconcat ,"1F") == -1 || stringutil.find(Labelsconcat ,"1S") == -1
+	return Stimulationlabel == "LDI" && PenisActionlabel == "LDI" && Penetrationlabel == "LDI" && OralLabel == "LDI" && EndingLabel == "LDI" 
 endfunction 
 
 Bool Function IsGettingSuckedoff()

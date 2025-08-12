@@ -279,3 +279,53 @@ String CurrentLabelstring = JsonUtil.GetStringValue(Path,anim,"")
 		jsonutil.SetStringValue(Path,anim,CurrentLabelstring+","+Label)
 	endif
 endfunction
+
+String[] Function GetStimulationlabelarr(string anim , int stage , actor[] actorlist) Global
+	int z
+	string[] result
+	while z < actorList.length
+		result = papyrusutil.pushstring(result , StimulationLabel(anim , stage , z))
+		z += 1
+	endwhile
+	return result
+endfunction
+
+String[] Function GetPenisActionlabelarr(string anim , int stage , actor[] actorlist) Global
+	int z
+	string[] result
+	while z < actorList.length
+		result = papyrusutil.pushstring(result , PenisActionLabel(anim , stage , z))
+		z += 1
+	endwhile
+	return result
+endfunction
+
+String[] Function GetOrallabelarr(string anim , int stage , actor[] actorlist) Global
+	int z
+	string[] result
+	while z < actorList.length
+		result = papyrusutil.pushstring(result , OralLabel(anim , stage , z))
+		z += 1
+	endwhile
+	return result
+endfunction
+
+String[] Function GetPenetrationLabelarr(string anim , int stage , actor[] actorlist) Global
+	int z
+	string[] result
+	while z < actorList.length
+		result = papyrusutil.pushstring(result , PenetrationLabel(anim , stage , z))
+		z += 1
+	endwhile
+	return result
+endfunction
+
+String[] Function GetEndingLabelarr(string anim , int stage , actor[] actorlist) Global
+	int z
+	string[] result
+	while z < actorList.length
+		result = papyrusutil.pushstring(result , EndingLabel(anim , stage , z))
+		z += 1
+	endwhile
+	return result
+endfunction
