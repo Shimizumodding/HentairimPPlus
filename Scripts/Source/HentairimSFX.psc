@@ -86,7 +86,7 @@ Event SFXOnStageStart(string eventName, string argString, float argNum, form sen
 EndEvent
 
 Event SFXOrgasm(Form actorhavingorgasm, Int thread) 
-	miscutil.printconsole("SFXOnStageStart On Orgasm Fire")	
+	;miscutil.printconsole("SFXOnStageStart On Orgasm Fire")	
 EndEvent
 
 Event OnUpdate()	

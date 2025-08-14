@@ -131,7 +131,7 @@ int MaleOrgasmHypeEnjoyment ;done
 int EnableDDGagVoice ;done
 Int EnableMaleVoice ;done
 float ChanceForMaleToComment ; done
-int Interactiontype
+
 String[] ArmorSlotsToSwitch
 Int[] ValidSlots
 form[] BaseArmorArr 
@@ -988,11 +988,6 @@ bool StageTransitioning = false
 		printdebug("ishugepp Scenario : " + ishugepp) 
 		UpdateLabels(CurrentSceneid , currentstage , PCPosition) ;update only for PC	
 		StageTransitioning = true
-		PrevPCInteractiontypes = PCInteractiontypes ;keep interaction from last stage
-		PCInteractiontypes = MasterScript.GetActorInteractiontypes(mainFemaleActor) ;update PC interaction types for current stage
-		PCPartnerInteractiontypes = MasterScript.GetActorPartnerInteractiontypes(mainFemaleActor) ;update Partner interaction types for current stage
-		printdebug(" PCInteractiontypes : " + PCInteractiontypes)
-		printdebug(" PCPartnerInteractiontypes : " + PCPartnerInteractiontypes)
 		;set intensity
 		ASLpreviouslyintense = ASLcurrentlyIntense
 
@@ -2181,11 +2176,11 @@ Bool Function IsEnding()
 endfunction
 
 Bool Function IsGivingAnalPenetration()
-	return FindInt(PCPartnerInteractiontypes,2) > -1 || PenisActionLabel == "FDA" || PenisActionLabel == "SDA"
+	return PenisActionLabel == "FDA" || PenisActionLabel == "SDA"
 endfunction
 
 Bool Function IsGivingVaginalPenetration()
-	return FindInt(PCPartnerInteractiontypes,1) > -1 || PenisActionLabel =="FDV" || PenisActionLabel == "SDV"
+	return PenisActionLabel =="FDV" || PenisActionLabel == "SDV"
 endfunction
 
 Bool Function PreviouslyIsGivingVaginalPenetration()
@@ -2206,15 +2201,15 @@ endfunction
 
 Bool Function IsGettingDoublePenetrated()
 
-return PenetrationLabel == "SDP" || PenetrationLabel == "FDP" || (FindInt(PCInteractiontypes,1) > -1 && FindInt(PCInteractiontypes,2) > -1)
+return PenetrationLabel == "SDP" || PenetrationLabel == "FDP" 
 endfunction 
 
 Bool Function IsGettingVaginallyPenetrated() 
-	return FindInt(PCInteractiontypes,1) > -1 || PenetrationLabel == "SVP" || PenetrationLabel == "FVP" || PenetrationLabel == "SCG" || PenetrationLabel == "FCG" || PenetrationLabel == "SDP" || PenetrationLabel == "FDP"
+	return PenetrationLabel == "SVP" || PenetrationLabel == "FVP" || PenetrationLabel == "SCG" || PenetrationLabel == "FCG" || PenetrationLabel == "SDP" || PenetrationLabel == "FDP"
 endfunction
 
 Bool Function PreviouslyIsGettingVaginallyPenetrated()
-	return FindInt(PrevPCInteractiontypes,1) > -1 || PrevPenetrationLabel == "SVP" || PrevPenetrationLabel == "FVP" || PrevPenetrationLabel == "SCG" || PrevPenetrationLabel == "FCG" || PrevPenetrationLabel == "SDP" || PrevPenetrationLabel == "FDP"
+	return PrevPenetrationLabel == "SVP" || PrevPenetrationLabel == "FVP" || PrevPenetrationLabel == "SCG" || PrevPenetrationLabel == "FCG" || PrevPenetrationLabel == "SDP" || PrevPenetrationLabel == "FDP"
 endfunction
 
 Bool Function PreviouslyIsFemdom() 
@@ -2222,11 +2217,11 @@ Bool Function PreviouslyIsFemdom()
 endfunction
 
 Bool Function IsGettingAnallyPenetrated() 
-	return FindInt(PCInteractiontypes,2) > -1 || PenetrationLabel == "SAP" || PenetrationLabel == "FAP"  || PenetrationLabel == "SAC" || PenetrationLabel == "FAC" || PenetrationLabel == "SDP" || PenetrationLabel == "FDP"
+	return PenetrationLabel == "SAP" || PenetrationLabel == "FAP"  || PenetrationLabel == "SAC" || PenetrationLabel == "FAC" || PenetrationLabel == "SDP" || PenetrationLabel == "FDP"
 endfunction
 
 Bool Function PreviouslyIsGettingAnallyPenetrated()
-	return FindInt(PrevPCInteractiontypes,2) > -1 || PrevPenetrationLabel == "SAP" || PrevPenetrationLabel == "FAP"  || PrevPenetrationLabel == "SAC" || PrevPenetrationLabel == "FAC" || PrevPenetrationLabel == "SDP" || PrevPenetrationLabel == "FDP"
+	return PrevPenetrationLabel == "SAP" || PrevPenetrationLabel == "FAP"  || PrevPenetrationLabel == "SAC" || PrevPenetrationLabel == "FAC" || PrevPenetrationLabel == "SDP" || PrevPenetrationLabel == "FDP"
 endfunction
 
 Bool Function IsGettingInsertedBig()
@@ -2234,7 +2229,7 @@ Bool Function IsGettingInsertedBig()
 endfunction
 
 Bool Function IsGettingSuckedoff()
-	return FindInt(PCPartnerInteractiontypes,5) > -1 || FindInt(PCPartnerInteractiontypes,3) > -1 || PenisActionLabel == "SMF" ||  PenisActionLabel == "FMF"	 
+	return PenisActionLabel == "SMF" ||  PenisActionLabel == "FMF"	 
 endfunction
 
 Bool Function IsGettingStimulated()
@@ -2242,11 +2237,11 @@ Bool Function IsGettingStimulated()
 endfunction
 
 Bool Function IsSuckingoffOther()
-	return OralLabel == "SBJ" ||  OralLabel == "FBJ" || FindInt(PCInteractiontypes,3) > -1 || FindInt(PCInteractiontypes,5) > -1
+	return OralLabel == "SBJ" ||  OralLabel == "FBJ"
 endfunction
 
 Bool Function PreviouslyIsSuckingoffOther() 
-	return PrevOralLabel == "SBJ" ||  PrevOralLabel == "FBJ" || FindInt(PrevPCInteractiontypes,3) > -1 || FindInt(PrevPCInteractiontypes,5) > -1
+	return PrevOralLabel == "SBJ" ||  PrevOralLabel == "FBJ"
 endfunction
 
 Bool Function IsCowgirl() 
@@ -2258,15 +2253,7 @@ Bool Function PreviouslyIsCowgirl()
 endfunction
 
 Bool Function IsKissing()
-	return OralLabel == "KIS" || FindInt(PCInteractiontypes,10) > -1
-endfunction
-
-BOol Function IsgivingHandjob()
-	return FindInt(PCInteractiontypes,9) > -1
-endfunction
-
-BOol Function Isgivingfootjob()
-	return FindInt(PCInteractiontypes,8) > -1
+	return OralLabel == "KIS"
 endfunction
 
 ;for Femdom or penetrating others
@@ -2281,7 +2268,7 @@ EndFunction
 
 
 Bool Function IsCunnilingus()
-	return FindInt(PCPartnerInteractiontypes,13) > -1 || FindInt(PCPartnerInteractiontypes,7) > -1 || OralLabel == "CUN"
+	return OralLabel == "CUN"
 endfunction
 
 Bool Function PreviousStageHasPenetration()
@@ -2290,7 +2277,7 @@ endfunction
 
 Bool Function IsStimulatingOthers()
 
- return isTitfuckOthers || IsgivingHandjob() || isHandjobOthers || IsFootjobOthers || Isgivingfootjob() || IsCunnilingus()
+ return isTitfuckOthers || isHandjobOthers || IsFootjobOthers || IsCunnilingus()
 
 endfunction
 
@@ -2606,10 +2593,6 @@ EndFunction
 Function EnableOrgasm()
 	MasterScript.DisableOrgasm(MainfemaleActor)
 EndFunction
-
-int[] PCInteractiontypes
-int[] PCPartnerInteractiontypes
-int[] PrevPCInteractiontypes
 
 ;------------------
 Int Function FindInt(Int[] arr, Int target)

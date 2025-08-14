@@ -137,14 +137,6 @@ Event OnUpdate()
 		RemoveTongue()
 		MFEEAddAhegao = true
 		printdebug("Starting MFEE Ahegao")
-	elseif !EquippedTongue()
-		
-		int rand = utility.randomint(1,100)
-		;isplayer
-		if (IsBroken() && enableahegao == 1) || (IsCunnilingus() && cunusetongue == 1) || (Isintense() && IsgettingPenetrated() && rand <= chancetostickouttongueduringintense)  ||  ((IsCowgirl() || IsGivingAnalPenetration() || IsGivingVaginalPenetration()) && !IsVictim && rand <= chancetostickouttongueduringattacking)
-			printdebug("Adding Tongue")
-			AddTongue()
-		endif
 	endif
 	
 	;------------------START RUNNING EXPRESSIONS--------------------
@@ -789,6 +781,15 @@ Function HentairimUpdateStageData()
 		printdebug("current StageID : " + currentStageID)
 		printdebug("current stage number: " + currentstage)
 		
+		elseif !EquippedTongue()
+		
+		int rand = utility.randomint(1,100)
+
+		if (IsBroken() && enableahegao == 1) || (IsCunnilingus() && cunusetongue == 1) || (Isintense() && IsgettingPenetrated() && rand <= chancetostickouttongueduringintense)  ||  ((IsCowgirl() || IsGivingAnalPenetration() || IsGivingVaginalPenetration()) && !IsVictim && rand <= chancetostickouttongueduringattacking)
+			printdebug("Adding Tongue")
+			AddTongue()
+		endif
+		
 		;remove mask if giving BJ
 		if IsSuckingoffOther()
 			unequipmask(actorref)
@@ -1006,4 +1007,3 @@ EndFunction
 function WritetoErrorlogs(string Header = "Not Specified" ,String contents = "")
 	JsonUtil.StringListAdd("ErrorLog.json", Header, " : " + contents, TRUE)
 endfunction
-

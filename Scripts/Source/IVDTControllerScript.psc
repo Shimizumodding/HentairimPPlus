@@ -93,6 +93,7 @@ string OriginalSceneID
 bool isPlayingForeplayScene
 int[] PCInteractionTypes
 int[] PCPartnerInteractionTypes
+int linearsceneenjoymentendstagetopup
 
 Bool DoneLinearSceneOrgasm
 ;Called first time ever the mod is loaded
@@ -199,6 +200,7 @@ Event DirectorSceneStart(string eventName, string argString, float argNum, form 
 	CurrentSceneID = CurrentThread.GetActiveScene()
 	CurrentStageID = CurrentThread.GetActiveStage()
 	actorList = CurrentThread.GetPositions()
+	PCPosition =  CurrentThread.GetPositionIdx(Playerref)
 	if isLinearScene()
 		disableorgasmall()
 	endif
@@ -207,7 +209,7 @@ Event DirectorSceneStart(string eventName, string argString, float argNum, form 
 	SceneExtend = false
 	RunCustomScene = CheckifShouldRunCustomScene()
 	if !RunCustomScene
-		if utility.randomint(1,100) <= chancetostartforeplay && currentthread.GetSubmissives().length == 0
+		if utility.randomint(1,100) <= chancetostartforeplay && PCPosition == 0 && !currentthread.GetSubmissive(playerref)
 			printdebug("Starting Foreplay")
 			StartForeplayScene()
 		endif
@@ -220,7 +222,7 @@ Event DirectorSceneStart(string eventName, string argString, float argNum, form 
 	AllFemale = AllFemale()
 	PCisReceiving = playerref == actorList[0]
 	PCisVictim = PCisVictim()
-	PCPosition =  CurrentThread.GetPositionIdx(Playerref)
+	
 	PositionsToAlign = papyrusutil.pushint(PositionsToAlign,0)
 	
 	
@@ -281,6 +283,15 @@ endfunction
 ;EndEvent
 bool completedResolvingHornyDebt
 Event OnUpdate()
+
+	int threadstatus = currentthread.GetStatus()
+	printdebug("threadstatus : " + threadstatus)
+	if threadstatus == 4 || threadstatus == 0
+		printdebug("End Scene.")
+		DirectorEndScene()
+		return
+	endif
+	
 	printdebug("---Updating---")
 	;check whether to advance Stage
 	printdebug("TimertoAdvance : " + TimertoAdvance)
@@ -345,13 +356,15 @@ Event OnUpdate()
 	printdebug("DoneLinearSceneOrgasm : " + DoneLinearSceneOrgasm)
 	printdebug("Isfinalstage() : " + Isfinalstage())
 	printdebug("isLinearScene() : " + isLinearScene())
+	printdebug("isPlayingForeplayScene : " + isPlayingForeplayScene)
+
 	;handle final stage orgasm for linear scene
 	if !DoneLinearSceneOrgasm && Isfinalstage() && isLinearScene()
 		printdebug("Linear Scene play endstage orgasm")
 		LinearEndStageForceOrgasm()
 		DoneLinearSceneOrgasm = true
 	endif
-	
+	printdebug("step 1")
 	;======Extended Scene===========
 	if storageutil.getintvalue(None,"HentairimExtendScene",0) == 1 && canAdvance()
 		printdebug("HentairimExtendScene is active.")
@@ -364,6 +377,7 @@ Event OnUpdate()
 		
 		;extend once
 		if isFinalStage()
+			printdebug("end extend scene.")
 			storageutil.Setintvalue(None,"HentairimExtendScene",0)
 			currentthread.Stopanimation()
 		endif
@@ -375,23 +389,29 @@ Event OnUpdate()
 			;check to see if can extendstage
 			bool result
 			if isFinalStage()
+				printdebug("is final stage.")
 				if isPlayingForeplayScene
+					printdebug("is foreplay scene. reset scene to original penetration scene.")
 					currentthread.ResetScene(OriginalSceneID) ;Go back to original intended scene that was skipped
-					String[] StagesIDarr = SexlabRegistry.GetAllStages(OriginalSceneID)
-					CurrentThread.SkipTo(StagesIDarr[1])
 				else ;check if can extend scene
 					;check if can counter rape
+					printdebug("check if can counter rape")
 					result = CounterRape()
+					printdebug("counter rape result : " + result)
 					;check if can extend scene
 					if !result
+						printdebug("check if can extend")
 						result = ExtendScene()
+						printdebug("ExtendScene result : " + ExtendScene())
 					endif
 					;advance to next stage. usually its end animation
 					if !result
+						printdebug("Cannot Extend or Counter Rape")
 						AdvancetoNextStage()
 					endif
 				endif
 			else
+				printdebug("Not Final Stage. Advance")
 				AdvancetoNextStage()
 			endif
 			printdebug("Calling AddtoTimer with value: " + GetTimer())
@@ -420,6 +440,7 @@ Event OnUpdate()
 		updatelabelsarr(CurrentSceneID, GetLegacyStageNum(CurrentSceneID, CurrentStageID))
 		if enablehentairimscaling == 1 && currentSceneID != CurrentThread.GetActiveScene()
 			HentairimScaling()
+			DoneLinearSceneOrgasm = false
 		EndIf
 		
 		LastLabelUpdateTime = CurrentThread.GetTimeTotal()
@@ -432,14 +453,8 @@ Event OnUpdate()
 	endif
 
 	;=== Continue Scene or End ===
-	if Sexlab.GetThreadByActor(playerref)
-		printdebug("Player is in scene. Registering update.")
-		RegisterForSingleUpdate(updaterate)
-	else
-		printdebug("Player is not in scene. Ending director.")
-		DirectorEndScene()
-	endif
-
+	
+	RegisterForSingleUpdate(updaterate)		
 	
 endEvent
 
@@ -835,6 +850,7 @@ Function InitializeDirectorConfigs()
 	directortoolskey = JsonUtil.GetIntValue(ControlConfigFile, "directortoolskey" ,0)
 	uselinearscene = JsonUtil.GetIntValue(ControlConfigFile, "uselinearscene" ,0)
 	givingforeplayinlinearscenedontorgasm = JsonUtil.GetIntValue(ControlConfigFile, "givingforeplayinlinearscenedontorgasm" ,0)
+	linearsceneenjoymentendstagetopup = JsonUtil.GetIntValue(ControlConfigFile, "givingforeplayinlinearscenedontorgasm" ,0)
 	modifierkey = JsonUtil.GetIntValue(ControlConfigFile, "modifierkey" ,0)
 	adjustforwardkey = JsonUtil.GetIntValue(ControlConfigFile, "adjustforwardkey" ,0)
 	adjustsidewayskey = JsonUtil.GetIntValue(ControlConfigFile, "adjustsidewayskey" ,0)
@@ -994,7 +1010,7 @@ Function ResetScaling()
 	
 	actorlistOriginalScalearr = new float[1]
 	actorlistOriginalScalearr = papyrusutil.RemoveFloat(actorlistOriginalScalearr,actorlistOriginalScalearr[0])
-	printdebug("actorlistOriginalScalearr after resetting : "  + actorlistOriginalScalearr)
+
 EndFunction
 
 
@@ -1082,7 +1098,6 @@ BaseArmorarr = new form[1]
 LewdArmorarr = new form[1]
 BaseArmorarr = papyrusutil.RemoveForm(BaseArmorarr , BaseArmorarr[0])
 LewdArmorarr = papyrusutil.RemoveForm(LewdArmorarr , LewdArmorarr[0])
-printdebug("BaseArmor contents after clearing : " + BaseArmor)
 EndFunction
 ;---------------------------ARMOR SWAPPING FUNCTIONS END------------------------
 
@@ -1974,12 +1989,12 @@ bool Function isFinalStage()
 	if RunCustomScene
 		if CustomStageNum >= CustomSceneTags.length
 			return  true
+		else 
+			return false
 		endif
 	else
 		int stages_count = SexlabRegistry.GetAllStages(currentsceneid).Length
 		int StageNum = GetLegacyStageNum(CurrentSceneid,currentstageid)
-		printdebug("isFinalStage stages_count : " + stages_count)
-		printdebug("isFinalStage StageNum : " + StageNum)
 		return StageNum >= stages_count
 	endIf
 EndFunction
@@ -2620,13 +2635,6 @@ Function ForceOrgasm(actor char)
 	endif
 endfunction
 
-;====================================================
-; LinearEndStageForceOrgasm
-; - Males start first
-; - Females join somewhere in the middle of TOTAL male orgasms
-; - Females capped to 1 orgasm
-; - Orgasms overlap (next person can start during wait)
-;====================================================
 Function LinearEndStageForceOrgasm()
     actor[] tmpCummingActorlist = actorList
     int[] orgasmCount
@@ -2642,7 +2650,10 @@ Function LinearEndStageForceOrgasm()
     while i < tmpCummingActorlist.Length
         int enjoy = math.ceiling(CurrentThread.GetEnjoyment(tmpCummingActorlist[i]) as float * GetOrgasmFactor(tmpCummingActorlist[i]))
         PrintDebug("Actor " + i + " initial enjoyment: " + enjoy)
-
+		if enjoy < 100
+			enjoy = 100
+		endif
+		
         if SexLab.GetSex(tmpCummingActorlist[i]) == 1 ; Female
             ; Cap female enjoyment to a single orgasm
             if givingforeplayinlinearscenedontorgasm == 1 && !IsgettingPenetrated(tmpCummingActorlist[i])
@@ -3049,8 +3060,7 @@ EndFunction
 bool Function StartForeplayScene()
 
 	int totalWeight = foreplayhandjobweight + foreplaytitfuckweight + foreplayfootjobweight + foreplayblowjobweight
-	if totalWeight <= 0
-		printdebug("StartForeplayScene - All foreplay weights are zero or negative!")
+	if totalWeight <= 0 && !currentthread.HasSceneTag("Vaginal") && !currentthread.HasSceneTag("anal") && !currentthread.HasSceneTag("fisting")
 		return false
 	endif
 	;Tags = "-5AFAC,-4AFAC,-3AFAC,-2AFAC,-1AFAC,-5ASAC,-4ASAC,-3ASAC,-2ASAC,-1ASAC,-1AFAP,-2AFAP,-3AFAP,-4AFAP,-5AFAP,-1ASAP,-2ASAP,-3ASAP,-4ASAP,-5ASAP,-1AFCG,-2AFCG,-3AFCG,-4AFCG,-5AFCG,-6AFCG,-7AFCG,-1ASCG,-2ASCG,-3ASCG,-4ASCG,-5ASCG,-2ASVP,-3ASVP,-4ASVP,-5ASVP,-6ASVP,-7ASVP,-8ASVP,-2AFVP,-3AFVP,-4AFVP,-5AFVP,-6AFVP,-7AFVP,-8AFVP,-1ASDP,-2ASDP,-3ASDP,-4ASDP,-5ASDP,-2AFDP,-3AFDP,-4AFDP,-5AFDP,-6AFDP,-7AFDP,"
@@ -3093,9 +3103,8 @@ endFunction
 
 	
 ;/
-;hentairim find stages should not mix big guy and shota
+;future task
 ;find and implement diffent cum noise. light medium heavy, very heavy
-;test linear
 
 >added new option to find and play custom stage from Stagemaker from Director Tools
 >Moved all changing animations options into one menu tree
@@ -3106,5 +3115,8 @@ endFunction
 >add identification for actors who can counter rape or extend scene
 >Combat Rape Option for Short Rape
 >added Cosplay Basic and Gala armor to armorswapping
+>Expressions Tongue usage conditions to check only once per stage
 
+known issues
+if close swf menu with N, scene ends prematurely at the last scene. not sure if it only happens to me, but keep the menu initialized.
 /; 

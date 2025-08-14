@@ -10,8 +10,7 @@ actor playerref
 actor[] actorlist
 int position
 string ActorRaceName = ""
-int[] Interactiontypes
-int[] PartnerInteractiontypes
+
 bool IsPlayer
 int gender
 string RaceNameFuckingPC 
@@ -454,8 +453,7 @@ Function HentairimUpdateStageData()
 		currentstage = GetLegacyStageNum(CurrentSceneID, currentStageID)
 		
 		UpdateLabels(Actorref)	
-		Interactiontypes = MasterScript.GetActorInteractiontypes(actorref)
-		PartnerInteractiontypes = MasterScript.GetActorPartnerInteractiontypes(actorref)
+
 		printdebug("PC Thread Position : " + CurrentThread.GetPositionIdx(Actorref))
 		printdebug("current Animation : " + CurrentSceneID)
 		printdebug("current StageID : " + currentStageID)
@@ -500,12 +498,12 @@ Bool Function IsGettingStimulated()
 endfunction
 
 Bool Function IsSuckingoffOther()
-	return OralLabel == "SBJ" ||  OralLabel == "FBJ" || FindInt(Interactiontypes,3) > -1 || FindInt(Interactiontypes,5) > -1
+	return OralLabel == "SBJ" ||  OralLabel == "FBJ"
 endfunction
 
 Bool Function IsGettingDoublePenetrated()
 
-return PenetrationLabel == "SDP" || PenetrationLabel == "FDP" || (FindInt(Interactiontypes,1) > -1 && FindInt(Interactiontypes,2) > -1)
+return PenetrationLabel == "SDP" || PenetrationLabel == "FDP"
 endfunction
 
 Bool Function IsgettingPenetrated()
@@ -513,27 +511,27 @@ Bool Function IsgettingPenetrated()
 endfunction
 
 Bool Function IsGettingVaginallyPenetrated()
-	return FindInt(Interactiontypes,1) > -1 || PenetrationLabel == "SVP" || PenetrationLabel == "FVP" || PenetrationLabel == "SCG" || PenetrationLabel == "FCG" || PenetrationLabel == "SDP" || PenetrationLabel == "FDP"
+	return  PenetrationLabel == "SVP" || PenetrationLabel == "FVP" || PenetrationLabel == "SCG" || PenetrationLabel == "FCG" || PenetrationLabel == "SDP" || PenetrationLabel == "FDP"
 endfunction
 
 Bool Function IsGettingAnallyPenetrated() 
-	return FindInt(Interactiontypes,2) > -1 || PenetrationLabel == "SAP" || PenetrationLabel == "FAP"  || PenetrationLabel == "SAC" || PenetrationLabel == "FAC" || PenetrationLabel == "SDP" || PenetrationLabel == "FDP"
+	return PenetrationLabel == "SAP" || PenetrationLabel == "FAP"  || PenetrationLabel == "SAC" || PenetrationLabel == "FAC" || PenetrationLabel == "SDP" || PenetrationLabel == "FDP"
 endfunction
 
 Bool Function IsKissing()
-	return OralLabel == "KIS" || FindInt(Interactiontypes,10) > -1
+	return OralLabel == "KIS" 
 endfunction
 
 Bool Function IsCunnilingus()
-	return FindInt(PartnerInteractiontypes,13) > -1 || FindInt(PartnerInteractiontypes,7) > -1 || OralLabel == "CUN"
+	return OralLabel == "CUN"
 endfunction
 
 Bool Function IsGivingAnalPenetration()
-	return FindInt(PartnerInteractiontypes,2) > -1 || PenisActionLabel == "FDA" || PenisActionLabel == "SDA"
+	return PenisActionLabel == "FDA" || PenisActionLabel == "SDA"
 endfunction
 
 Bool Function IsGivingVaginalPenetration()
-	return FindInt(PartnerInteractiontypes,1) > -1 || PenisActionLabel =="FDV" || PenisActionLabel == "SDV"
+	return PenisActionLabel =="FDV" || PenisActionLabel == "SDV"
 endfunction
 
 Bool Function IsLeadIN()
@@ -541,7 +539,7 @@ Bool Function IsLeadIN()
 endfunction 
 
 Bool Function IsGettingSuckedoff()
-	return FindInt(PartnerInteractiontypes,5) > -1 || FindInt(PartnerInteractiontypes,3) > -1 || PenisActionLabel == "SMF" ||  PenisActionLabel == "FMF"	 
+	return PenisActionLabel == "SMF" ||  PenisActionLabel == "FMF"	 
 endfunction
 
 Bool Function IsCowgirl()
@@ -652,16 +650,6 @@ endif
 endfunction 
 
 
-Int Function FindInt(Int[] arr, Int target)
-    Int i = 0
-    While i < arr.Length
-        If arr[i] == target
-            Return i ; Found, return index
-        EndIf
-        i += 1
-    EndWhile
-    Return -1 ; Not found
-EndFunction
 Bool function isDependencyReady(String modname)
   int index = Game.GetModByName(modname)
   if index == 255 || index == -1
