@@ -390,162 +390,173 @@ Function ASLEndScene()	;manually end scene
 endfunction
 
 Bool FemaleisProcessingMaleOrgasm
-Bool FemaleisProcessingownOrgasm
 
 Event IVDTOnOrgasm(Form actorRef, Int thread)
-	If thread != ThreadID  || actorWithSceneTrackerSpell != mainFemaleActor	
+
+	  PrintDebug("IVDTOnOrgasm : " + thread + " (expected " + ThreadID + "), SceneActorMatch=" + (actorWithSceneTrackerSpell == mainFemaleActor) + ", TimeSinceLastFemaleOrgasm=" + (CurrentThread.GetTimeTotal() - timeOfLastRecordedFemaleOrgasm))
+	If thread != ThreadID  || actorWithSceneTrackerSpell != mainFemaleActor || CurrentThread.GetTimeTotal() - timeOfLastRecordedFemaleOrgasm <= 5
+		printdebug("Exiting early: Thread mismatch, wrong actor, or orgasm cooldown active.")
 		Return
 	EndIf
 
-Actor actorHavingOrgasm = actorRef as Actor
-if isLinearScene()
-	if (IsSuckingoffOther() || IsgettingPenetrated()) && actorHavingOrgasm != mainFemaleActor && sexlab.getsex(actorHavingOrgasm) != 1
-		PlaySound(DefaultMaleVoice.Orgasm, mainFemaleActor, requiredChemistry = 0, soundPriority = 3, waitForCompletion = False, debugtext ="DefaultMaleOrgasm")
-		
-		if  IsgettingPenetrated() && Utility.RandomFloat(0.0, 1.0) < ChanceToLeakThickCum && CameInsideCount > 0
-			ASLAddThickCumleak()
-		endif
-	endif
-	
-	if !FemaleisProcessingMaleOrgasm && !FemaleisProcessingownOrgasm
-		FemaleisProcessingMaleOrgasm = true
-		if IsSuckingoffOther()
-			PlaySound(mainFemaleVoice.MaleOrgasmOral, mainFemaleActor, requiredChemistry = 0, soundPriority = 3 , debugtext= "MaleOrgasmOral")	
-		else
-			if IsHugePP
-				PlaySound(mainFemaleVoice.SurprisedByMaleOrgasm, mainFemaleActor, requiredChemistry = 0 , soundPriority = 3 , debugtext ="SurprisedByMaleOrgasm")
-			else
-				if moanonly == 1
-					PlaySound(mainFemaleVoice.Oh, mainFemaleActor, requiredChemistry = 0, soundPriority = 3 , debugtext= "MaleOrgasmNonOral")
-				else
-					PlaySound(mainFemaleVoice.MaleOrgasmNonOral, mainFemaleActor, requiredChemistry = 0, soundPriority = 3, debugtext= "MaleOrgasmNonOral")
-				endif
+	Actor actorHavingOrgasm = actorRef as Actor
+	printdebug("Actor having orgasm: " + actorHavingOrgasm)
+
+	if isLinearScene()
+		printdebug("Processing in Linear Scene branch.")
+
+		if (IsSuckingoffOther() || IsgettingPenetrated()) && actorHavingOrgasm != mainFemaleActor && sexlab.getsex(actorHavingOrgasm) != 1
+			printdebug("Detected male orgasm during penetration/oral. Playing DefaultMaleOrgasm.")
+			PlaySound(DefaultMaleVoice.Orgasm, mainFemaleActor, requiredChemistry = 0, soundPriority = 3, waitForCompletion = False, debugtext ="DefaultMaleOrgasm")
+
+			if IsgettingPenetrated() && Utility.RandomFloat(0.0, 1.0) < ChanceToLeakThickCum && CameInsideCount > 0
+				printdebug("Triggering thick cum leak effect.")
+				ASLAddThickCumleak()
 			endif
 		endif
-		FemaleisProcessingMaleOrgasm = false
-	endif
-	
-	if actorHavingOrgasm == mainFemaleActor && !IsUnconcious()
-		FemaleisProcessingownOrgasm = TRUE
-		FemaleisProcessingMaleOrgasm = True ;stop processing Male Orgasm
-		int waitCounter = 0
-		
-		ASLAddOrgasmSSquirt()
 
-		if moanonly == 1
-			PlaySound(mainFemaleVoice.Oh, mainFemaleActor, requiredChemistry = 0, soundPriority = 3 , debugtext= "Oh")
-		else
-			PlaySound(mainFemaleVoice.Orgasm, mainFemaleActor, requiredChemistry = 0, soundPriority = 3, debugtext ="FemaleOrgasm" , Force = true) ;
+		if !FemaleisProcessingMaleOrgasm
+			printdebug("Processing female reaction to male orgasm.")
+			FemaleisProcessingMaleOrgasm = true
+			if IsSuckingoffOther()
+				printdebug("Playing MaleOrgasmOral sound.")
+				PlaySound(mainFemaleVoice.MaleOrgasmOral, mainFemaleActor, requiredChemistry = 0, soundPriority = 3 , debugtext= "MaleOrgasmOral")
+			else
+				if IsHugePP
+					printdebug("Playing SurprisedByMaleOrgasm sound (HugePP).")
+					PlaySound(mainFemaleVoice.SurprisedByMaleOrgasm, mainFemaleActor, requiredChemistry = 0 , soundPriority = 3 , debugtext ="SurprisedByMaleOrgasm")
+				else
+					if moanonly == 1
+						printdebug("Playing simple 'Oh' reaction to male orgasm.")
+						PlaySound(mainFemaleVoice.Oh, mainFemaleActor, requiredChemistry = 0, soundPriority = 3 , debugtext= "MaleOrgasmNonOral")
+					else
+						printdebug("Playing MaleOrgasmNonOral sound.")
+						PlaySound(mainFemaleVoice.MaleOrgasmNonOral, mainFemaleActor, requiredChemistry = 0, soundPriority = 3, debugtext= "MaleOrgasmNonOral")
+					endif
+				endif
+			endif
+			FemaleisProcessingMaleOrgasm = false
 		endif
-		
-		CommentedClosetoOrgasm = false
-		RecordFemaleOrgasm()
-		ASLRemoveOrgasmSSquirt()
-		FemaleisProcessingownOrgasm = false
-		FemaleisProcessingMaleOrgasm = false
-	endif
-else
-	;Non Linear Scene
-	;If ( actorHavingOrgasm == mainMaleActor || (MasterScript.IsMale(actorHavingOrgasm) || hasSchlong(actorHavingOrgasm))) && actorHavingOrgasm != mainFemaleActor && !femaleisgiving()
-	If actorHavingOrgasm != mainFemaleActor 
-		
-	printdebug("non PC ORGASM!" )
+
+		if actorHavingOrgasm == mainFemaleActor && !IsUnconcious() && CurrentThread.GetTimeTotal() - timeOfLastRecordedFemaleOrgasm > 5
+			printdebug("Main female orgasm detected. Starting orgasm sequence.")
+			FemaleisProcessingMaleOrgasm = True
+			int waitCounter = 0
+
+			ASLAddOrgasmSSquirt()
+			printdebug("Added orgasm squirt effect.")
+
+			if moanonly == 1
+				printdebug("Playing simple 'Oh' for female orgasm.")
+				PlaySound(mainFemaleVoice.Oh, mainFemaleActor, requiredChemistry = 0, soundPriority = 3 , debugtext= "Oh")
+			else
+				printdebug("Playing FemaleOrgasm sound.")
+				RecordFemaleOrgasm()
+				PlaySound(mainFemaleVoice.Orgasm, mainFemaleActor, requiredChemistry = 0, soundPriority = 3, debugtext ="FemaleOrgasm" , Force = true)
+			endif
+
+			CommentedClosetoOrgasm = false
+			printdebug("Recording female orgasm in stats.")
+			ASLRemoveOrgasmSSquirt()
+			printdebug("Removed orgasm squirt effect.")
+			FemaleisProcessingMaleOrgasm = false
+		endif
+	else
+		printdebug("Processing in Non-Linear Scene branch.")
+
+		If actorHavingOrgasm != mainFemaleActor 
+			printdebug("Male orgasm detected (Non-linear). Recording and reacting.")
 			RecordMaleOrgasm()
 
 			if IsSuckingoffOther() || IsgettingPenetrated()
-				;If mainMaleVoice != None && actorHavingOrgasm == mainMaleActor
-				;	PlaySound(mainMaleVoice.Orgasm, mainFemaleActor, requiredChemistry = 0, soundPriority = 3, waitForCompletion = False, debugtext ="MaleOrgasm")	
-			;	elseif DefaultMaleVoice != None
-					PlaySound(DefaultMaleVoice.Orgasm, mainFemaleActor, requiredChemistry = 0, soundPriority = 3, waitForCompletion = False, debugtext ="DefaultMaleOrgasm")
-				;EndIf	
+				printdebug("Playing DefaultMaleOrgasm sound.")
+				PlaySound(DefaultMaleVoice.Orgasm, mainFemaleActor, requiredChemistry = 0, soundPriority = 3, waitForCompletion = False, debugtext ="DefaultMaleOrgasm")
 			endif
-			
+
 			if  CurrentThread.GetTimeTotal() - timeOfLastKneeJerkReaction > 2.0 && mainFemaleEnjoyment <= FemaleOrgasmHypeEnjoyment
-
 				if MainFemaleisBurstingAtSeams() && CurrentPenetrationLvl() > 1
-				
 					float AdditionalHugePPChanceLeak = 1
-					
-						if ishugePP
-							AdditionalHugePPChanceLeak = 2
-						endif	
-
-						PlaySound(mainFemaleVoice.SurprisedByMaleOrgasm, mainFemaleActor, requiredChemistry = 0 , soundPriority = 3 , debugtext ="SurprisedByMaleOrgasm")
-
-						;miscutil.PrintConsole (" leaking pussy")
-						ASLAddThickCumleak()
-						ASLAddCumPool()
-
-				elseif 	!IsSuckingoffOther() || !IsgettingPenetrated() && !femaleisvictim() && moanonly != 1
-
-					PlaySound(mainFemaleVoice.ReadyToGetGoing, mainFemaleActor, requiredChemistry = 2 , debugtext= "ReadyToGetGoing")	
-				
-				ElseIf IsSuckingoffOther() 	;&& CurrentThread.GetTimeTotal() - timeOfLastStageStart > 2
+					if ishugePP
+						AdditionalHugePPChanceLeak = 2
+					endif
+					printdebug("Female surprised by male orgasm, adding cum leak & pool.")
+					PlaySound(mainFemaleVoice.SurprisedByMaleOrgasm, mainFemaleActor, requiredChemistry = 0 , soundPriority = 3 , debugtext ="SurprisedByMaleOrgasm")
+					ASLAddThickCumleak()
+					ASLAddCumPool()
+				elseif !IsSuckingoffOther() || !IsgettingPenetrated() && !femaleisvictim() && moanonly != 1
+					printdebug("Playing ReadyToGetGoing sound.")
+					PlaySound(mainFemaleVoice.ReadyToGetGoing, mainFemaleActor, requiredChemistry = 2 , debugtext= "ReadyToGetGoing")
+				ElseIf IsSuckingoffOther()
 					Utility.Wait(Utility.RandomFloat(0.5, 1.5))
-
-					PlaySound(mainFemaleVoice.MaleOrgasmOral, mainFemaleActor, requiredChemistry = 0, soundPriority = 3 , debugtext= "MaleOrgasmOral")	
-				
-				elseif ishugepp ;&& CurrentThread.GetTimeTotal() - timeOfLastStageStart > 2
-
+					printdebug("Playing MaleOrgasmOral sound.")
+					PlaySound(mainFemaleVoice.MaleOrgasmOral, mainFemaleActor, requiredChemistry = 0, soundPriority = 3 , debugtext= "MaleOrgasmOral")
+				elseif ishugepp
+					printdebug("Playing SurprisedByMaleOrgasm sound.")
 					PlaySound(mainFemaleVoice.SurprisedByMaleOrgasm, mainFemaleActor, requiredChemistry = 0 , soundPriority = 3 , debugtext= "SurprisedByMaleOrgasm")
-
-				elseif CurrentPenetrationLvl() > 1  ;&& CurrentThread.GetTimeTotal() - timeOfLastStageStart > 2
+				elseif CurrentPenetrationLvl() > 1
 					if moanonly == 1
+						printdebug("Playing 'Oh' reaction.")
 						PlaySound(mainFemaleVoice.Oh, mainFemaleActor, requiredChemistry = 0, soundPriority = 3 , debugtext= "MaleOrgasmNonOral")
 					else
+						printdebug("Playing MaleOrgasmNonOral sound.")
 						PlaySound(mainFemaleVoice.MaleOrgasmNonOral, mainFemaleActor, requiredChemistry = 0, soundPriority = 3, debugtext= "MaleOrgasmNonOral")
 					endif
-
 				EndIf
-				
 			endif
+
 			timeOfLastKneeJerkReaction = CurrentThread.GetTimeTotal()
+			printdebug("Updated knee jerk reaction timer.")
 
 			if Utility.RandomFloat(0.0, 1.0) <= 0.5
+				printdebug("Setting ReacttoMaleOrgasmNext to true.")
 				ReacttoMaleOrgasmNext = true
-			endif 
-
-			teasedClosetoorgasm = false
-			
-	ElseIf actorHavingOrgasm == mainFemaleActor
-	printdebug("PC ORGASM! ")
-		
-		;oninus lactis
-		if HasOninusLactis() && utility.randomint(1,100) <= oninuslactischancetolactateduringorgasm
-			OninusLactislactate()
-		endif
-
-		ASLAddOrgasmSSquirt()
-		
-		if !IsUnconcious()
-			if moanonly == 1
-				PlaySound(mainFemaleVoice.Oh, mainFemaleActor, requiredChemistry = 0, soundPriority = 3 , debugtext= "Oh")
-			else
-				PlaySound(mainFemaleVoice.Orgasm, mainFemaleActor, requiredChemistry = 0, soundPriority = 3, debugtext ="FemaleOrgasm" , Force = true) ;, waitForCompletion = False)	
 			endif
-		endif
+			teasedClosetoorgasm = false
+		ElseIf actorHavingOrgasm == mainFemaleActor
+			printdebug("Female orgasm detected (Non-linear).")
+			if HasOninusLactis() && utility.randomint(1,100) <= oninuslactischancetolactateduringorgasm
+				printdebug("Triggering Oninus Lactis lactation during orgasm.")
+				OninusLactislactate()
+			endif
+
+			ASLAddOrgasmSSquirt()
+			printdebug("Added orgasm squirt effect.")
+
+			if !IsUnconcious()
+				if moanonly == 1
+					printdebug("Playing simple 'Oh' for female orgasm.")
+					PlaySound(mainFemaleVoice.Oh, mainFemaleActor, requiredChemistry = 0, soundPriority = 3 , debugtext= "Oh")
+				else
+					printdebug("Playing FemaleOrgasm sound.")
+					PlaySound(mainFemaleVoice.Orgasm, mainFemaleActor, requiredChemistry = 0, soundPriority = 3, debugtext ="FemaleOrgasm")
+				endif
+			endif
+
 			if hypebeforeorgasm == 1
+				printdebug("Disabling orgasm due to hypebeforeorgasm setting.")
 				DisableOrgasm()
 			endif
+
 			CommentedClosetoOrgasm = false
-		timeOfLastKneeJerkReaction = CurrentThread.GetTimeTotal()
-		RecordFemaleOrgasm()
-		ASLRemoveOrgasmSSquirt()
-		
-		
-		;chance to create reaction next cycle
-		float ChancetoReact = 0.6
+			timeOfLastKneeJerkReaction = CurrentThread.GetTimeTotal()
+			printdebug("Recording female orgasm in stats.")
+			RecordFemaleOrgasm()
+			ASLRemoveOrgasmSSquirt()
+			printdebug("Removed orgasm squirt effect.")
 
-		if ASLCurrentlyintense
-			ChancetoReact = ChancetoReact / 2
-		endif
+			float ChancetoReact = 0.6
+			if ASLCurrentlyintense
+				ChancetoReact = ChancetoReact / 2
+			endif
 
-		if ChancetoReact <= Utility.RandomFloat(0.0, 1.0)
-			ReacttoFemaleOrgasmNext = true
-		endif 
-	EndIf
-endif	
+			if ChancetoReact <= Utility.RandomFloat(0.0, 1.0)
+				printdebug("Setting ReacttoFemaleOrgasmNext to true.")
+				ReacttoFemaleOrgasmNext = true
+			endif 
+		EndIf
+	endif
 EndEvent
+
 
 Event IVDTOnStageStart(string eventName, string argString, float argNum, form sender)
 	;sound.stopinstance(123)
@@ -604,13 +615,13 @@ if actorWithSceneTrackerSpell == mainFemaleActor
 		endif
 		
 		;Linear Stage : Play Pre FInal Stage Orgasm Hype
-		if MasterScript.isAlmostFinalStage() && isLinearScene() && !HasDeviousGag(mainFemaleActor) && !CommentedClosetoOrgasm && !isShortenedScene()	
+		if MasterScript.isAlmostFinalStage() && isLinearScene() && !HasDeviousGag(mainFemaleActor) && !CommentedClosetoOrgasm && !isShortenedScene() && !Masterscript.LinearSceneCanOrgasm(MainfemaleActor)
 			printdebug("Playing Linear Scene Pre Final Stage")
 			LinearScenePlayFemalePreFinalStage()
 			CommentedClosetoOrgasm = true
 		elseif isLinearScene() && IsfinalStage() && !LinearSceneDonePostOrgasmComments && !isShortenedScene()
 			;wait for orgasm to complete
-			while !MasterScript.DoneLinearSceneOrgasm() || FemaleisProcessingMaleOrgasm || FemaleisProcessingownOrgasm
+			while !MasterScript.DoneLinearSceneOrgasm() && CurrentThread.GetTimeTotal() - timeOfLastRecordedFemaleOrgasm <= 5 
 				Utility.wait(1)
 			endwhile
 			printdebug("Playing Linear Scene Post Orgasm")
@@ -1002,7 +1013,7 @@ bool StageTransitioning = false
 	endif
 	
 ;Play advance stage words
-	if StageTransitioning && actorWithSceneTrackerSpell == mainFemaleActor && !isShortenedScene()
+	if StageTransitioning && actorWithSceneTrackerSpell == mainFemaleActor && !isShortenedScene() && !Masterscript.isPlayingForeplayScene()
 
 		printdebug("Stage Transitioning")
 		ASLPlayStageTransition()

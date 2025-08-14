@@ -165,15 +165,17 @@ EndFunction
 
 Event DirectorStageStart(string eventName, string argString, float argNum, form sender)
 	if CurrentThread
-		LoadStageSpeed()
+		LoadStageSpeed() ;load saved speed
+		LoadSchlongAdjustment() ;load saved schlong adjustments
 		;trigger update for creatureframework
 		if currentSceneID != CurrentThread.GetActiveScene() 
+			DoneLinearSceneOrgasm = false
 			TriggerUpdateforCreatures()
 		endif
 	endif
 EndEvent
 
-
+int[]PositionsToAlign
 ;Director reacts when a sexlab scene start
 Event DirectorSceneStart(string eventName, string argString, float argNum, form sender)
 	;Hentairim is for handling player scenes only. 
@@ -363,6 +365,7 @@ Event OnUpdate()
 		printdebug("Linear Scene play endstage orgasm")
 		LinearEndStageForceOrgasm()
 		DoneLinearSceneOrgasm = true
+		
 	endif
 	printdebug("step 1")
 	;======Extended Scene===========
@@ -392,6 +395,8 @@ Event OnUpdate()
 				printdebug("is final stage.")
 				if isPlayingForeplayScene
 					printdebug("is foreplay scene. reset scene to original penetration scene.")
+					DoneLinearSceneOrgasm = false
+					isPlayingForeplayScene = false
 					currentthread.ResetScene(OriginalSceneID) ;Go back to original intended scene that was skipped
 				else ;check if can extend scene
 					;check if can counter rape
@@ -440,7 +445,7 @@ Event OnUpdate()
 		updatelabelsarr(CurrentSceneID, GetLegacyStageNum(CurrentSceneID, CurrentStageID))
 		if enablehentairimscaling == 1 && currentSceneID != CurrentThread.GetActiveScene()
 			HentairimScaling()
-			DoneLinearSceneOrgasm = false
+			
 		EndIf
 		
 		LastLabelUpdateTime = CurrentThread.GetTimeTotal()
@@ -478,6 +483,9 @@ Function AddTrackerToSceneIfApplicable(string argString)
 	endif	
 	if EnableIVDT == 1
 		printdebug("playerref added Hentairim ivdt Spell")
+		sslVoiceSlots.DeleteVoice(playerref)
+		sslVoiceSlots.StoreVoice(playerref,"")
+		threadcontroller.ActorAlias[pcposition].SetActorVoice("",true)
 		playerref.AddSpell(SceneTrackerSpell, abVerbose = False) ;Scene with female voice actor
 	endif
 	;-------------Applying SFX Spell to non position 1 actors----------------
@@ -1816,7 +1824,29 @@ endfunction
 
 ;endfunction
 
-
+Bool Function LinearSceneCanOrgasm(actor char)
+;check the past stages tags to see if actor has been stimulated before for orgasm
+int stagecount = SexlabRegistry.GetAllStages(currentsceneid).length - 1
+int pos = CurrentThread.GetPositionIdx(char)
+	while stagecount > -1
+		string tmpPenisActionLabel = HentairimTags.PenisActionLabel(currentsceneid , stagecount , pos)
+		string tmpStimulationLabel = HentairimTags.StimulationLabel(currentsceneid , stagecount , pos)
+		string tmpPenetrationLabel = HentairimTags.PenetrationLabel(currentsceneid , stagecount , pos)
+		if tmpPenisActionLabel == "SFJ" || tmpPenisActionLabel == "FFJ" || tmpPenisActionLabel == "STF" || tmpPenisActionLabel == "FTF" || tmpPenisActionLabel == "SDV" || tmpPenisActionLabel == "FDV" || tmpPenisActionLabel == "SDA" || tmpPenisActionLabel == "FDA" || tmpPenisActionLabel == "SMF" || tmpPenisActionLabel == "FMF" || tmpPenisActionLabel == "SHJ" || tmpPenisActionLabel == "FHJ"
+			printdebug(char.getdisplayname() + " had Penis Action Label. Can Orgasm")
+			return TRUE
+		elseif tmpPenetrationLabel == "SVP" || tmpPenetrationLabel == "FVP" || tmpPenetrationLabel == "SAP" || tmpPenetrationLabel == "FAP" || tmpPenetrationLabel == "SDP" || tmpPenetrationLabel == "FDP"
+			printdebug(char.getdisplayname() + " had Penetrated before. Can Orgasm")
+			return TRUE
+		elseif tmpStimulationLabel == "SST" || tmpStimulationLabel == "FST" || tmpStimulationLabel == "BST"
+			printdebug(char.getdisplayname() + " had Stimulation before. Can Orgasm")
+			return TRUE
+		endif
+		Stagecount -= 1
+	endwhile
+	printdebug(char.getdisplayname() + " didnt had any sort of stimulation. cannot orgasm")
+	return false
+endFunction
 
 
 string function GetNextStageID(String asScene, String asStage)
@@ -2023,7 +2053,7 @@ Function OpenDirectorsTools()
 	endif
 	Int result
     b612_SelectList DirectorTools = GetSelectList()
-    String[] Directortoolsarr = StringUtil.Split("Change Stage;Change Animation;Resolve Hentairim Scaling;Show Scene Tags; Actor Alignments;Toggle Stage Advance;Save Stage Speed;Disable Scene;End Scene;Find Animations Without Hentairim Tags",";")
+    String[] Directortoolsarr = StringUtil.Split("Change Stage;Change Animation;Resolve Hentairim Scaling;Show Scene Tags; Actor Position Alignments;Actor Schlong Alignments;Toggle Stage Advance;Save Stage Speed;Disable Scene;End Scene;Find Animations Without Hentairim Tags",";")
 	
 	result = DirectorTools.Show(Directortoolsarr)
 	
@@ -2043,36 +2073,14 @@ Function OpenDirectorsTools()
 			actorList[z].SetScale(GetAnimSpecialScaleValue(z))
 			z += 1
 		endwhile
-	;elseif result == 3 ; Add Hentairim Tags or SFX to file
-	;	UITextEntryMenu InputBox = UIExtensions.GetMenu("UITextEntryMenu") as UITextEntryMenu
-	;	Inputbox.OpenMenu()
-	;	string InputString = Inputbox.GetResultString()
-	;	string[] tags = StringUtil.Split(InputString ,",")
-	;	if tags.length > 0
-	;		int z = 0
-	;		while z < tags.length
-	;			String Actionline = "AddTag," + SexlabRegistry.GetSceneName(CurrentSceneID) + "," + InputString		
-	;			LogActionToFile(Actionline)
-	;			z += 1
-	;		endwhile
-	;	announce(InputString + " Tags Saved to HentairimDirector/ActionLogs.json")
-	;	endif
-		;/b612_SelectList TagsTypeList = GetSelectList()
-		String[] TagsTypearr = StringUtil.Split("Add Hentairim Tag;Update SFX Tag",";")
-	
-		int selected = TagsTypeList.Show(TagsTypearr)
-		if selected == 0
-			sexlabregistry.AddSceneAnnotation(currentsceneid,"test tag")
-		elseif selected == 1
-			ShowUpdateSFXTags()
-		EndIf
-		/;
 	elseif result == 3 ;Show Scene Tags
 		debug.Messagebox( SexLabRegistry.GetSceneName(CurrentSceneID) + " : " + SexLabRegistry.GetSceneTags(CurrentSceneID))
 		
 	elseif result == 4 ;Actor Alignments
         ShowAlignmentActorList()
-	elseif result == 5
+	elseif result == 5 ;Actor Schlong Alignments
+		ShowSchlongAlignmentActorList()
+	elseif result == 6
 		if DirectorCanAdvanceStage
 			DirectorCanAdvanceStage = false
 			Announce("Advance Stage Paused")
@@ -2080,13 +2088,13 @@ Function OpenDirectorsTools()
 			DirectorCanAdvanceStage = true
 			Announce("Advance Stage Resumed")
 		endif
-	elseif result == 6
-		SaveStageSpeed()
 	elseif result == 7
-		DisableScene(CurrentSceneID)
+		SaveStageSpeed()
 	elseif result == 8
-		currentthread.Stopanimation()
+		DisableScene(CurrentSceneID)
 	elseif result == 9
+		currentthread.Stopanimation()
+	elseif result == 10
 		FindAnimationWithoutHentairimTags()
     EndIf
 EndFunction
@@ -2265,7 +2273,67 @@ Function FindAnimationWithoutHentairimTags()
 	endif
 EndFunction
 
-int[] PositionsToAlign
+Function ShowSchlongAlignmentActorList()
+	b612_SelectList Actorlistmenu = GetSelectList()
+	b612_QuantitySlider AdjustmentValueSlider = GetQuantitySlider()
+	String[] ActorlistNames
+	
+	int z = 0
+	while z < actorlist.Length
+			ActorlistNames = papyrusutil.pushstring(ActorlistNames , actorlist[z].getdisplayname())
+		z += 1
+	endWhile
+	
+	;Show Actor List
+	actor ActortoAdjust
+	int position = Actorlistmenu.Show(ActorlistNames)
+	if position <= -1
+		return
+	else
+		ActortoAdjust = actorlist[position]
+	EndIf
+		printdebug("ActortoAdjust Schlong : " + ActortoAdjust.getdisplayname())
+	if HasSchlongOrStrapOn(ActortoAdjust)
+		;Actor has Schlong or Strap on. Open UI for value input
+		UITextEntryMenu InputBox = UIExtensions.GetMenu("UITextEntryMenu") as UITextEntryMenu
+		Inputbox.OpenMenu()
+		int AdjustmentValue = Inputbox.GetResultString() as int
+		;int AdjustmentValue = AdjustmentValueSlider.show("Adjust Schlong Position",-9,9)
+		if AdjustmentValue <= 9 ||  AdjustmentValue >= -9
+			printdebug("ActortoAdjust Schlong AdjustmentValue: " + AdjustmentValue)
+			Debug.SendAnimationEvent(ActortoAdjust, "SOSBend" + AdjustmentValue as string)
+			SaveSchlongAdjustment(currentthread.GetPositionIdx(ActortoAdjust) , AdjustmentValue)
+			printdebug("Applied Schlong Adjustments")
+		else
+			printdebug("Bad Schlong Adjustment Value Input")
+			Announce("Bad Schlong Adjustment Value Input")
+		endIf
+	else
+		printdebug(ActortoAdjust.getdisplayname() + " Does not Have Schlong or Strap on!")
+		Announce(ActortoAdjust.getdisplayname() + " Does not Have Schlong or Strap on!")
+	endIf
+endFunction
+
+
+Function SaveSchlongAdjustment(int position , int value)
+	jsonutil.SetintValue("HentairimDirector/SchlongAdjustment.json",SexlabRegistry.GetSceneName(CurrentSceneID) +"|"+GetLegacyStageNum(currentSceneID,currentStageID)+"|"+position,value)	
+	printdebug ("=======================Saved Schlong Adjustments")
+endfunction
+
+Function LoadSchlongAdjustment()
+	int z
+	while z < actorList.Length
+		actor ActortoAdjust = actorList[z]
+		Int Adjustment = jsonutil.GetIntValue("HentairimDirector/SchlongAdjustment.json",SexlabRegistry.GetSceneName(CurrentSceneID) +"|"+GetLegacyStageNum(currentSceneID,currentStageID)+"|"+z, 0)
+		if Adjustment != 0
+			Debug.SendAnimationEvent(ActortoAdjust, "SOSBend" + Adjustment as string)
+			printdebug("=======================Applying Schlong Adjustment to : " + ActortoAdjust)
+		else
+			printdebug("=======================No Schlong Adjustments Saved for position " + z)
+		endIf
+		z += 1
+	endwhile		
+endfunction
 
 Function ShowAlignmentActorList()
 	b612_SelectList Actorlistmenu = GetSelectList()
@@ -2298,7 +2366,6 @@ Function ShowAlignmentActorList()
 endfunction
 
 Function ShowCustomStageList()
-	customscenetags
 	b612_SelectList CustomStagesMenuList = GetSelectList()
 	
 	;prepare Custom Stages
@@ -2425,8 +2492,12 @@ bool Function TeleportToRandomStageWithTags(String Tags , int StartFromStage = 1
 		currentthread.ResetScene(SelectedSceneID) ;resets to stage 1 by default
 		CurrentThread.SkipTo(StagesIDarr[StartFromStage - 1])
 		RunCustomScene = false ;stop running custom stage
+		isPlayingForeplayScene = false ;stop identifying as foreplay
+		DoneLinearSceneOrgasm = false; Reset Linear Scene Orgasm
 		return true
 	else
+		printdebug("No Scene Found with Tags : " + Tags)
+		WritetoErrorlogs("No Scene Found with Tags : " + Tags)
 		return false
 	endIf
 	
@@ -2653,16 +2724,20 @@ Function LinearEndStageForceOrgasm()
 		if enjoy < 100
 			enjoy = 100
 		endif
+		bool CanOrgasm = true
+		
+		if givingforeplayinlinearscenedontorgasm == 1
+			CanOrgasm = LinearSceneCanOrgasm(tmpCummingActorlist[i])
+		endIf
 		
         if SexLab.GetSex(tmpCummingActorlist[i]) == 1 ; Female
-            ; Cap female enjoyment to a single orgasm
-            if givingforeplayinlinearscenedontorgasm == 1 && !IsgettingPenetrated(tmpCummingActorlist[i])
-                enjoy = 0 ;process as 0 in leadin stage
-                PrintDebug("Actor " + i + " is female — enjoyment capped to 100")
-            endif
-            femaleIndexes = PapyrusUtil.PushInt(femaleIndexes, i)
+            if CanOrgasm
+				femaleIndexes = PapyrusUtil.PushInt(femaleIndexes, i)
+			endif
         else ; Male
-            maleIndexes = PapyrusUtil.PushInt(maleIndexes, i)
+			if CanOrgasm
+				maleIndexes = PapyrusUtil.PushInt(maleIndexes, i)
+			endif
         endif
 
         int orgasms = enjoy / 100
@@ -3097,6 +3172,9 @@ bool Function StartForeplayScene()
 	return result
 endFunction
 
+bool function isPlayingForeplayScene()
+	return isPlayingForeplayScene
+endfunction
 
 ;------------------------------Director's Tools END------------------------
 
@@ -3105,6 +3183,11 @@ endFunction
 ;/
 ;future task
 ;find and implement diffent cum noise. light medium heavy, very heavy
+;Enable Sexlab Voice and See how it goes
+;Add Schlong Adjustment
+;Penetration happened gape sound with IVDT before foreplay change
+;orgasm play too many times
+;if foreplay and play stage transition, its as if player is started fucking extended.
 
 >added new option to find and play custom stage from Stagemaker from Director Tools
 >Moved all changing animations options into one menu tree
@@ -3116,6 +3199,8 @@ endFunction
 >Combat Rape Option for Short Rape
 >added Cosplay Basic and Gala armor to armorswapping
 >Expressions Tongue usage conditions to check only once per stage
+>Enabling IVDT will Mute Player in Sexlab
+>Add Schlong Adjustments Function
 
 known issues
 if close swf menu with N, scene ends prematurely at the last scene. not sure if it only happens to me, but keep the menu initialized.
