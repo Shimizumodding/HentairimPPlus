@@ -301,7 +301,7 @@ Event OnUpdate()
 	;check for key being held down
 	if Input.IsKeyPressed(directortoolskey)
 	printdebug("Director Tools key pressed.")
-	OpenDirectorsTools()
+	OpenDirectorTools()
 
 	elseif Input.IsKeyPressed(adjustsidewayskey)
 		printdebug("Adjust Sideways key pressed.")
@@ -2047,13 +2047,13 @@ EndFunction
 ;------------------------------Director's Tools START------------------------
 String ActionLogsFile  = "ActionLogs/ActionLogs.json"
 
-Function OpenDirectorsTools()
+Function OpenDirectorTools()
 	if !CurrentThread 
 		return none
 	endif
 	Int result
     b612_SelectList DirectorTools = GetSelectList()
-    String[] Directortoolsarr = StringUtil.Split("Change Stage;Change Animation;Resolve Hentairim Scaling;Show Scene Tags; Actor Position Alignments;Actor Schlong Alignments;Toggle Stage Advance;Save Stage Speed;Disable Scene;End Scene;Find Animations Without Hentairim Tags",";")
+    String[] Directortoolsarr = StringUtil.Split("Change Stage;Change Animation;Resolve Hentairim Scaling;Actor Position Alignments;Actor Schlong Alignments;Toggle Stage Advance;Save Stage Speed;Debug Tools",";")
 	
 	result = DirectorTools.Show(Directortoolsarr)
 	
@@ -2073,14 +2073,11 @@ Function OpenDirectorsTools()
 			actorList[z].SetScale(GetAnimSpecialScaleValue(z))
 			z += 1
 		endwhile
-	elseif result == 3 ;Show Scene Tags
-		debug.Messagebox( SexLabRegistry.GetSceneName(CurrentSceneID) + " : " + SexLabRegistry.GetSceneTags(CurrentSceneID))
-		
-	elseif result == 4 ;Actor Alignments
-        ShowAlignmentActorList()
-	elseif result == 5 ;Actor Schlong Alignments
+	elseif result == 3 ;Actor Alignments
+        ShowAlignmentActorList()		
+	elseif result == 4 ;Actor Schlong Alignments
 		ShowSchlongAlignmentActorList()
-	elseif result == 6
+	elseif result == 5
 		if DirectorCanAdvanceStage
 			DirectorCanAdvanceStage = false
 			Announce("Advance Stage Paused")
@@ -2088,16 +2085,302 @@ Function OpenDirectorsTools()
 			DirectorCanAdvanceStage = true
 			Announce("Advance Stage Resumed")
 		endif
-	elseif result == 7
+	elseif result == 6
 		SaveStageSpeed()
-	elseif result == 8
-		DisableScene(CurrentSceneID)
-	elseif result == 9
-		currentthread.Stopanimation()
-	elseif result == 10
-		FindAnimationWithoutHentairimTags()
-    EndIf
+	elseif result == 7 ;Open Debug tools
+		OpenDebugTools()
+	endif
 EndFunction
+
+function OpenDebugTools()
+	Int result
+	b612_SelectList DiagnosticToolsMenu = GetSelectList()
+	String[] Menulist = StringUtil.Split("Show Scene Tags;Disable Scene;Stop Animation;Find Animation Without Hentairim Tags;Diagnose Hentairim Tags;Diagnose Director",";")
+	result = DiagnosticToolsMenu.Show(Menulist)	
+
+	if result == 0 ;Show Scene Tags
+		debug.Messagebox( SexLabRegistry.GetSceneName(CurrentSceneID) + " : " + SexLabRegistry.GetSceneTags(CurrentSceneID))
+	elseif result == 1 ; Disable scene
+		DisableScene(CurrentSceneID)
+	elseif result == 2 ;stop animation
+		currentthread.Stopanimation() ;
+	elseif result == 3 ;find animation without hentairim tags
+		FindAnimationWithoutHentairimTags()
+	ElseIf result == 4 ;diagnose hentairim tags
+		DiagnoseHentairimTags()
+	ElseIf result == 5 ;diagnose Director
+		DiagnoseDirector()
+	endif
+endfunction
+
+Function DiagnoseHentairimTags()
+
+	string Tags = "-5AFAC,-4AFAC,-3AFAC,-2AFAC,-1AFAC,-5ASAC,-4ASAC,-3ASAC,-2ASAC,-1ASAC,-1AFAP,-2AFAP,-3AFAP,-4AFAP,-5AFAP,-1ASAP,-2ASAP,-3ASAP,-4ASAP,-5ASAP,-1BFST,-2BFST,-3BFST,-4BFST,-5BFST,-5AFST,-4AFST,-3AFST,-2AFST,-1AFST,-5BSST,-4BSST,-3BSST,-2BSST,-1BSST,-1ASST,-2ASST,-3ASST,-4ASST,-5ASST,-1AFCG,-2AFCG,-3AFCG,-4AFCG,-5AFCG,-6AFCG,-7AFCG,-1ASCG,-2ASCG,-3ASCG,-4ASCG,-5ASCG,-1BFHJ,-2BFHJ,-3BFHJ,-4BFHJ,-5BFHJ,-1BSHJ,-2BSHJ,-3BSHJ,-4BSHJ,-5BSHJ,-1BSFJ,-2BSFJ,-3BSFJ,-4BSFJ,-5BSFJ,-1BFTF,-2BFTF,-3BFTF,-4BFTF,-5BFTF,-1BSTF,-2BSTF,-3BSTF,-4BSTF,-5BSTF,-1AFBJ,-2AFBJ,-3AFBJ,-4AFBJ,-5AFBJ,-1ASBJ,-2ASBJ,-3ASBJ,-4ASBJ,-5ASBJ,-2ASVP,-3ASVP,-4ASVP,-5ASVP,-6ASVP,-7ASVP,-8ASVP,-2AFVP,-3AFVP,-4AFVP,-5AFVP,-6AFVP,-7AFVP,-8AFVP,-1ASDP,-2ASDP,-3ASDP,-4ASDP,-5ASDP,-2AFDP,-3AFDP,-4AFDP,-5AFDP,-6AFDP,-7AFDP"
+	;lookup with playing actors
+	string[] SceneIDarrWithoutTags = SexLabRegistry.LookupScenesA( currentthread.GetPositions()  ,Tags,  currentthread.GetSubmissives(), 0, none )
+	string[] SceneIDarr = SexLabRegistry.LookupScenesA( currentthread.GetPositions()  ,"",  currentthread.GetSubmissives(), 0, none )
+	
+	int Countwithouttags = SceneIDarrWithoutTags.length
+	int TotalCount = SceneIDarr.length
+	String Messagestr = "=====Hentairim Tags Diagnostics====="
+	int z
+	while z < actorList.length
+		string sexname
+		int sex = Sexlab.GetSex(actorlist[z])
+		if sex == 0
+			sexname = Actorlist[z].GetDisplayName() + " (Male)"
+		elseif sex == 1
+			sexname = Actorlist[z].GetDisplayName() +" (Female)"
+		elseif sex == 2
+			Sexname = Actorlist[z].GetDisplayName() + " (Futa)"
+		elseif Sex > 2
+			sexname = Actorlist[z].GetDisplayName() + " (" +actorlist[z].GetRace().GetName()+")"
+		endif		
+		Messagestr += "\n Position " + z + " : " + sexname 
+		z += 1
+	EndWhile
+	 float Incompletepc = Countwithouttags as float / TotalCount as float
+	  Messagestr += "\n \n =====Results===== "
+	 Messagestr += "\n Total Animations For this Position  : " + TotalCount
+	 Messagestr += "\n Total Animations For this Position Without Tags: " + Countwithouttags
+	 Messagestr += "\n Percentage of Animations without Hentairim Tags : " + (Incompletepc * 100) as string + "%"
+	 debug.MessageBox(Messagestr)
+	 Messagestr = ""
+	 Messagestr += "=====Director's Message===== "
+	 
+	 if Incompletepc > 0.9
+		Messagestr += "\n a Very high Percentage of your scenes are missing its Hentairim Tags. Hentairim will still function, but You will lose out a lot , A LOT of the intended experience by Hentairim as scenes not without HentairimTags will be treated as lead in"
+		Messagestr += "\n its very likely that although you installed SLSB correctly, the Scenes Do not Contain Hentairim Tags, which is likely that you Generated your own SLSB or Downloaded Someone's SLSB release without HentairimTags and did not use the Pre Converted SLSB from the Release Page which already contain the Hentairim Tags."
+		Messagestr += "\n Few things you can do :"
+		Messagestr += "\n If you Didnt Generate the SLSB Yourself, You can pester the Guy who released the SLSB to include Hentairim Tags in SLSB."
+		Messagestr += "\n OR"
+		Messagestr += "\n Follow the Step by Step Guide from SLPP Release Page on how to use the Convert.py to Generate SLSB WITH HENTAIRIM TAGS IN SLATE ACTION FILES. You can get the Hentairim Tags SLATE Action log along with the Hentairim Release Page. FOLLOW THE CONVERT.py GUIDE WORD FOR WORD. if you not sure what you are doing, Ask for Help in the SLPP discord." 
+	 elseif Incompletepc > 0.30
+		Messagestr += "\n a High Percentage of your scenes are missing its Hentairim Tags. you will have mixed experience depending on the scene played which wouldnt be very pleasant."
+		Messagestr += "\n If You Generated the SLSB, Add the Hentairim Action Logs which can be retrieved from Hentairim Release Page, and include it into your SLSB Generation. Follow the Convert.py Guide on how to include SLATE Action logs."
+		Messagestr += "\n If you didnt Generate the SLSB, you can pester the SLSB Release Guy to include updated Hentairim Tags."
+		Messagestr += "\n Download the PreConverted SLSB from SLPP Release Page and use the Matching Animation Packs Version against the Fomod."
+	elseif Incompletepc > 0.10
+		Messagestr += "\n Most of your Animations have Hentairim Installed, but there is a significant amount to notice"
+		Messagestr += "\n Make sure You have Generated/Downloaded the SLSB with the latest Hentairim SLATE Action logs."
+	elseif  Incompletepc > 0.05
+		Messagestr += "\n Great! a most of Your Scenes Contain Hentairim Tags."
+		Messagestr += "\n You can choose to Fine tune by adding in the tags and include in the SLSB Generation."
+		Messagestr += "\n if you do add in your tags in missing animation, please do share your SLATE Action log to the Hentairim Board in SLPP Discord or Loverslab Release Page."
+	 endIf
+	 
+		Messagestr += "\n \n \n Note : Hentairim Tags SLATE is missing some tags for some animation as it does not cover Guro animations, explicitly gay animations , and some obscure animation packs."
+		Messagestr += "\n You can always Assign the Hentairim Tags yourself by adding them into the action log. Read the Hentairim Guide for its assignment."
+		debug.MessageBox(Messagestr)
+endfunction
+
+Function DiagnoseDirector()
+	String Messagestr = "===== Director Config Diagnostics ====="
+
+	; ===== Expressions =====
+	if enableExpressions == 1
+		Messagestr += "\nExpressions: Enabled"
+	else
+		Messagestr += "\nExpressions: Disabled"
+	endif
+
+	if enablepcexpression == 1
+		Messagestr += "\n - PC Expressions: Enabled"
+	else
+		Messagestr += "\n - PC Expressions: Disabled"
+	endif
+
+	if enablefemalenpcexpression == 1
+		Messagestr += "\n - Female NPC Expressions: Enabled"
+	else
+		Messagestr += "\n - Female NPC Expressions: Disabled"
+	endif
+
+	if enablemalenpcexpression == 1
+		Messagestr += "\n - Male NPC Expressions: Enabled"
+	else
+		Messagestr += "\n - Male NPC Expressions: Disabled"
+	endif
+
+	; ===== SFX =====
+	if EnableSFX == 1
+		Messagestr += "\nSFX: Enabled"
+	else
+		Messagestr += "\nSFX: Disabled"
+	endif
+
+	; ===== Resistance =====
+	if enableResistance == 1
+		Messagestr += "\nAggression Resistance: Enabled"
+	else
+		Messagestr += "\nAggression Resistance: Disabled"
+	endif
+
+	if enablepcresistancedamage == 1
+		Messagestr += "\n - PC Damage: Enabled"
+	else
+		Messagestr += "\n - PC Damage: Disabled"
+	endif
+
+	if enablemalenpcresistancedamage == 1
+		Messagestr += "\n - Male NPC Damage: Enabled"
+	else
+		Messagestr += "\n - Male NPC Damage: Disabled"
+	endif
+
+	if enablefemalenpcresistancedamage == 1
+		Messagestr += "\n - Female NPC Damage: Enabled"
+	else
+		Messagestr += "\n - Female NPC Damage: Disabled"
+	endif
+
+	if enablecreaturenpcresistancedamage == 1
+		Messagestr += "\n - Creature NPC Damage: Enabled"
+	else
+		Messagestr += "\n - Creature NPC Damage: Disabled"
+	endif
+
+	; ===== Director Controls =====
+	if enableautoadvancestage == 1
+		Messagestr += "\nAuto-Advance Stage: Enabled"
+	else
+		Messagestr += "\nAuto-Advance Stage: Disabled"
+	endif
+
+	if enablearmorswap == 1
+		Messagestr += "\nArmor Swap: Enabled"
+	else
+		Messagestr += "\nArmor Swap: Disabled"
+	endif
+
+	if enablehentairimscaling == 1
+		Messagestr += "\nHentairim Scaling: Enabled"
+	else
+		Messagestr += "\nHentairim Scaling: Disabled"
+	endif
+
+	if resetsmp == 1
+		Messagestr += "\nReset SMP: Enabled"
+	else
+		Messagestr += "\nReset SMP: Disabled"
+	endif
+
+	if resetsexassignment == 1
+		Messagestr += "\nReset Sex Assignment: Enabled"
+	else
+		Messagestr += "\nReset Sex Assignment: Disabled"
+	endif
+
+	; ===== Stage Maker =====
+	if enablestagemaker == 1
+		Messagestr += "\nStage Maker: Enabled"
+	else
+		Messagestr += "\nStage Maker: Disabled"
+	endif
+
+	Messagestr += "\n - Chance to Use Custom Stage: " + chancetousecustomstage + "%"
+	debug.messagebox(Messagestr)
+	messagestr = ""
+	; ===== Timers =====
+	Messagestr += "\n\n===== Timers (seconds) ====="
+	Messagestr += "\nLDI: " + ldi
+	Messagestr += "\nSST: " + sst
+	Messagestr += "\nFST: " + fst
+	Messagestr += "\nBST: " + bst
+	Messagestr += "\nKIS: " + kis
+	Messagestr += "\nCUN: " + cun
+	Messagestr += "\nSBJ: " + sbj
+	Messagestr += "\nFBJ: " + fbj
+	Messagestr += "\nSAP: " + sap
+	Messagestr += "\nSVP: " + svp
+	Messagestr += "\nFAP: " + fap
+	Messagestr += "\nFVP: " + fvp
+	Messagestr += "\nSDP: " + sdp
+	Messagestr += "\nFDP: " + fdp
+	Messagestr += "\nSCG: " + scg
+	Messagestr += "\nSAC: " + sac
+	Messagestr += "\nFCG: " + fcg
+	Messagestr += "\nFAC: " + fac
+	Messagestr += "\nSDV: " + sdv
+	Messagestr += "\nSDA: " + sda
+	Messagestr += "\nFDV: " + fdv
+	Messagestr += "\nFDA: " + fda
+	Messagestr += "\nSHJ: " + shj
+	Messagestr += "\nFHJ: " + fhj
+	Messagestr += "\nSTF: " + stf
+	Messagestr += "\nFTF: " + ftf
+	Messagestr += "\nSMF: " + smf
+	Messagestr += "\nFMF: " + fmf
+	Messagestr += "\nSFJ: " + sfj
+	Messagestr += "\nFFJ: " + ffj
+	Messagestr += "\nENO: " + eno
+	Messagestr += "\nENI: " + eni
+	debug.messagebox(Messagestr)
+	messagestr = ""
+	; ===== Foreplay Weights =====
+	Messagestr += "\n\n===== Foreplay Weights ====="
+	Messagestr += "\nHandjob: " + foreplayhandjobweight
+	Messagestr += "\nTitfuck: " + foreplaytitfuckweight
+	Messagestr += "\nFootjob: " + foreplayfootjobweight
+	Messagestr += "\nBlowjob: " + foreplayblowjobweight
+
+	; ===== Linear Scene Settings =====
+	Messagestr += "\n\n===== Linear Scene Factors ====="
+	Messagestr += "\nFinal Stage Orgasm Factor: " + linearscenefinalstageorgasmfactor
+	;Print Orgasm Factor of each Actor
+	
+	int z
+	while z < Actorlist.length
+		Float ActorOrgasmFactor = GetOrgasmFactor(actorList[z])
+		Messagestr += "\n--" + actorList[z].getdisplayname()
+		Messagestr += "\n----Linear Stage Orgasm Factor : " + ActorOrgasmFactor
+		Messagestr += "\n----Current Enjoyment : " + currentthread.GetEnjoyment(actorList[z])
+		Messagestr += "\n----Enjoyment After Orgasm Factor : " + currentthread.GetEnjoyment(actorList[z]) * ActorOrgasmFactor
+		z += 1
+	EndWhile
+	
+	; ===== Stage Extension ===== ExtendStageChance
+	Messagestr += "\n\n===== Stage Extensions ====="
+	Messagestr += "\nExtend Stage Chance: " + linearsceneextendstagechance + "%"
+	while z < Actorlist.length
+		Messagestr += "\n--" + actorList[z].getdisplayname() 
+		int ActorExtendStageChance = (ExtendStageChance(actorList[z]) * 100 ) as int
+		if actorList[z] == playerref
+			Messagestr += "\n----Player Cannot Extend Stage."
+		else
+			Messagestr += "\n---Extend Stage Chance : " + ActorExtendStageChance
+			if  GetControllingActor() && ActorExtendStageChance > 0
+				Messagestr += "\n----"+ actorList[z].getdisplayname() +" is Controlling & Extend Stage chance is "+ ActorExtendStageChance+"%. Extend Scene Might Happen"
+			else
+				Messagestr += "\n----"+ actorList[z].getdisplayname() +" is Not Controlling or Extend Stage chance is 0%. Extend Scene Wont Happen"
+			endif
+		endIf
+		z += 1
+	EndWhile
+	
+	Messagestr += "\nCounter Rape Chance: " + linearscenecounterrapechance + "%"
+	
+	while z < Actorlist.length
+		Messagestr += "\n--" + actorList[z].getdisplayname() 
+		int ActorCounterrapechance = (CounterRapeChance(actorList[z]) * 100) as int
+		if actorList[z] == playerref
+			Messagestr += "\n----Player Cannot Counter Rape Others."
+		else
+			Messagestr += "\n----Counter Rape Chance : " + ActorCounterrapechance
+			if currentthread.GetSubmissive(playerref)
+				Messagestr += "\n----Player is Victim. Counter Rape Wont Happen"
+			elseif currentthread.GetSubmissive(actorList[z]) && ActorCounterrapechance > 0
+				Messagestr += "\n----"+ actorList[z].getdisplayname() +" is Victim & Counter Rape Chance is " +ActorCounterrapechance +". Counter Rape Might Happen"
+			else
+				Messagestr += "\n----"+ actorList[z].getdisplayname() +" is Not Victim or Counter Rape Chance is 0. Counter Rape Wont Happen"
+			endif
+		endIf
+		z += 1
+	EndWhile
+	debug.messagebox(Messagestr)
+	messagestr = ""
+EndFunction
+
 
 Function OpenChangeAnimationMenu()
 	Int result
@@ -2293,7 +2576,7 @@ Function ShowSchlongAlignmentActorList()
 		ActortoAdjust = actorlist[position]
 	EndIf
 		printdebug("ActortoAdjust Schlong : " + ActortoAdjust.getdisplayname())
-	if HasSchlongOrStrapOn(ActortoAdjust)
+
 		;Actor has Schlong or Strap on. Open UI for value input
 		UITextEntryMenu InputBox = UIExtensions.GetMenu("UITextEntryMenu") as UITextEntryMenu
 		Inputbox.OpenMenu()
@@ -2305,13 +2588,10 @@ Function ShowSchlongAlignmentActorList()
 			SaveSchlongAdjustment(currentthread.GetPositionIdx(ActortoAdjust) , AdjustmentValue)
 			printdebug("Applied Schlong Adjustments")
 		else
-			printdebug("Bad Schlong Adjustment Value Input")
-			Announce("Bad Schlong Adjustment Value Input")
+			printdebug("Bad Schlong Adjustment Value Input. Value must be between -9 and 9")
+			Announce("Bad Schlong Adjustment Value Input. Value must be between -9 and 9")
 		endIf
-	else
-		printdebug(ActortoAdjust.getdisplayname() + " Does not Have Schlong or Strap on!")
-		Announce(ActortoAdjust.getdisplayname() + " Does not Have Schlong or Strap on!")
-	endIf
+
 endFunction
 
 
@@ -2996,6 +3276,16 @@ actor function FindFirstActorwithPenisPosition()
 	return none
 EndFunction
 
+Actor function GetControllingActor()
+	if currentthread.HasSceneTag("cowgirl") || currentthread.HasSceneTag("amazon") || currentthread.HasSceneTag("femdom")
+		return actorlist[0]
+	elseif currentthread.HasSceneTag("lesbian")
+		return actorlist[1]
+	else
+		return FindFirstActorwithPenisPosition()
+	endif
+EndFunction
+
 bool Function ExtendScene()
 	;check if can Extend Scene
 	string tags
@@ -3014,7 +3304,7 @@ bool Function ExtendScene()
 			; non femdom scene extend to non femdom scene
 			tags = "aggressive,-1ASCG,-2ASCG,-3ASCG,-4ASCG,-5ASCG,-6ASCG,-1AFCG,-2AFCG,-3AFCG,-4AFCG,-5AFCG"
 		else
-			tags = "-aggressive,-1ASCG,-2ASCG,-3ASCG,-4ASCG,-5ASCG,-6ASCG,-1AFCG,-2AFCG,-3AFCG,-4AFCG,-5AFCG"
+			tags = "-1ASCG,-2ASCG,-3ASCG,-4ASCG,-5ASCG,-6ASCG,-1AFCG,-2AFCG,-3AFCG,-4AFCG,-5AFCG"
 		endif
 	endIf
 	if ActorWhoisControlling == None
@@ -3055,7 +3345,7 @@ Float Function ExtendStageChance(actor char)
 endFunction
 
 bool Function CounterRape()		
-	;check if can Counter Rape
+	
 	string tags
 	string hentairimtagwithoutstage
 	actor[] Submissives = CurrentThread.GetSubmissives()

@@ -386,18 +386,18 @@ Sound Function GetSlushSoundToPlay(int InteractionType, float TimetoThrust)
     PRINTDEBUG("GetSlushSound | TimetoThrust: " + TimetoThrust)
 
     if InteractionType == 1 ; vaginal
-        if TimetoThrust <= 0.3
+        if TimetoThrust <= 0.25
             return FastS
-        elseif TimetoThrust <= 0.5
+        elseif TimetoThrust <= 0.45
             return MediumS
         else
             return SmallS
         endif
 
     elseif InteractionType == 2 ; anal
-        if TimetoThrust <= 0.3
+        if TimetoThrust <= 0.25
             return MediumS
-        elseif TimetoThrust <= 0.5
+        elseif TimetoThrust <= 0.45
             return SmallS
         else
             return SmallS
@@ -417,11 +417,11 @@ Sound Function GetImpactSoundToPlay(float TimetoThrust)
 
     PRINTDEBUG("GetImpactSound | TimetoThrust: " + TimetoThrust)
 
-    if TimetoThrust <= 0.3
+    if TimetoThrust <= 0.25
         return FastI
-    elseif TimetoThrust <= 0.5
+    elseif TimetoThrust <= 0.45
         return MediumI
-    elseif TimetoThrust <= 1.0
+    elseif TimetoThrust <= 0.75
         return Smalli
 	else
 		return none
@@ -782,6 +782,11 @@ endfunction
 Bool Function IsLeadIN()
 	return stringutil.find(Labelsconcat ,"1F") == -1 || stringutil.find(Labelsconcat ,"1S") == -1
 endfunction 
+
+Bool Function isEnding()
+	PenisActionLabel = "ENI"
+endfunction
+
 
 Bool function isDependencyReady(String modname)
   int index = Game.GetModByName(modname)

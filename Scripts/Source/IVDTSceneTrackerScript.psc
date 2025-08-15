@@ -405,7 +405,7 @@ Event IVDTOnOrgasm(Form actorRef, Int thread)
 	if isLinearScene()
 		printdebug("Processing in Linear Scene branch.")
 
-		if (IsSuckingoffOther() || IsgettingPenetrated()) && actorHavingOrgasm != mainFemaleActor && sexlab.getsex(actorHavingOrgasm) != 1
+		if (IsSuckingoffOther() || IsgettingPenetrated()) && actorHavingOrgasm != mainFemaleActor && sexlab.getsex(actorHavingOrgasm) != 1 && !LinearSceneCanOrgasm
 			printdebug("Detected male orgasm during penetration/oral. Playing DefaultMaleOrgasm.")
 			PlaySound(DefaultMaleVoice.Orgasm, mainFemaleActor, requiredChemistry = 0, soundPriority = 3, waitForCompletion = False, debugtext ="DefaultMaleOrgasm")
 
@@ -422,17 +422,12 @@ Event IVDTOnOrgasm(Form actorRef, Int thread)
 				printdebug("Playing MaleOrgasmOral sound.")
 				PlaySound(mainFemaleVoice.MaleOrgasmOral, mainFemaleActor, requiredChemistry = 0, soundPriority = 3 , debugtext= "MaleOrgasmOral")
 			else
-				if IsHugePP
-					printdebug("Playing SurprisedByMaleOrgasm sound (HugePP).")
-					PlaySound(mainFemaleVoice.SurprisedByMaleOrgasm, mainFemaleActor, requiredChemistry = 0 , soundPriority = 3 , debugtext ="SurprisedByMaleOrgasm")
+				if moanonly == 1
+					printdebug("Playing simple 'Oh' reaction to male orgasm.")
+					PlaySound(mainFemaleVoice.Oh, mainFemaleActor, requiredChemistry = 0, soundPriority = 3 , debugtext= "MaleOrgasmNonOral")
 				else
-					if moanonly == 1
-						printdebug("Playing simple 'Oh' reaction to male orgasm.")
-						PlaySound(mainFemaleVoice.Oh, mainFemaleActor, requiredChemistry = 0, soundPriority = 3 , debugtext= "MaleOrgasmNonOral")
-					else
-						printdebug("Playing MaleOrgasmNonOral sound.")
-						PlaySound(mainFemaleVoice.MaleOrgasmNonOral, mainFemaleActor, requiredChemistry = 0, soundPriority = 3, debugtext= "MaleOrgasmNonOral")
-					endif
+					printdebug("Playing MaleOrgasmNonOral sound.")
+					PlaySound(mainFemaleVoice.MaleOrgasmNonOral, mainFemaleActor, requiredChemistry = 0, soundPriority = 3, debugtext= "MaleOrgasmNonOral")
 				endif
 			endif
 			FemaleisProcessingMaleOrgasm = false
@@ -615,7 +610,7 @@ if actorWithSceneTrackerSpell == mainFemaleActor
 		endif
 		
 		;Linear Stage : Play Pre FInal Stage Orgasm Hype
-		if MasterScript.isAlmostFinalStage() && isLinearScene() && !HasDeviousGag(mainFemaleActor) && !CommentedClosetoOrgasm && !isShortenedScene() && !Masterscript.LinearSceneCanOrgasm(MainfemaleActor)
+		if MasterScript.isAlmostFinalStage() && isLinearScene() && !HasDeviousGag(mainFemaleActor) && !CommentedClosetoOrgasm && !isShortenedScene()
 			printdebug("Playing Linear Scene Pre Final Stage")
 			LinearScenePlayFemalePreFinalStage()
 			CommentedClosetoOrgasm = true
@@ -984,7 +979,7 @@ Bool Function MaleIsVictim()
 return CurrentThread.GetSubmissive(mainMaleActor) && EnableVictimScenario == 1
 EndFunction
 
-
+bool LinearSceneCanOrgasm
 Function IVDTUpdate()
 ;check if thread is still running for PC
 bool StageTransitioning = false
@@ -1007,7 +1002,7 @@ bool StageTransitioning = false
 		else
 			ASLCurrentlyintense = false
 		endif
-		
+		LinearSceneCanOrgasm = Masterscript.LinearSceneCanOrgasm(MainfemaleActor)
 		DirectorLastLabelTime = MasterScript.GetDirectorLastLabelTime()
 		printdebug("Stage is intense? : " + ASLCurrentlyintense)
 	endif
@@ -1157,7 +1152,8 @@ Function PlayMaleComments()
 endfunction
 
 Function LinearScenePlayFemalePreFinalStage()
-	if mainMaleEnjoyment > mainFemaleEnjoyment || MaleIsVictim()
+	printdebug("Masterscript.LinearSceneCanOrgasm(MainfemaleActor) : " + Masterscript.LinearSceneCanOrgasm(MainfemaleActor))
+	if mainMaleEnjoyment > mainFemaleEnjoyment || MaleIsVictim() ||  Masterscript.LinearSceneCanOrgasm(MainfemaleActor)
 		ASLPlayMaleClosetoOrgasmComments()
 	else
 		ASLPlayFemaleOrgasmHype()
@@ -1582,6 +1578,7 @@ endif
 			PlaySound(mainMaleVoice.TeaseAggressivePartner, mainFemaleActor, soundPriority = 2 , waitForCompletion = False ,debugtext = "TeaseAggressivePartner")
 		else
 			PlaySound(mainMaleVoice.PostNutRemark, mainFemaleActor, requiredChemistry = 0, soundPriority = 2 , waitForCompletion = false ,debugtext = "PostNutRemark")
+			PlaySound(mainFemaleVoice.AfterOrgasmExclamations, mainFemaleActor, requiredChemistry = 0 ,debugtext = "AfterOrgasmExclamations")
 		endif
 		Utility.Wait(Utility.RandomFloat(1.0, 2.0))
 		PlaySound(mainFemaleVoice.AfterOrgasmExclamations, mainFemaleActor, requiredChemistry = 0 ,debugtext = "AfterOrgasmExclamations")
@@ -1819,6 +1816,7 @@ ReacttoFemaleOrgasmNext = false
 
 endfunction
 
+
 Function ASLPlayStageTransition()
 
 if currentStage >= 3
@@ -2052,8 +2050,8 @@ Bool Function ProcessReadytoAdvanceStage()
 		Printdebug("IVDT dont allow advance : donotadvanceifpartnerclosetoorgasm = 1 . is femdom someone. Male Enjoyment > Male Enjoyment Hype. is fucking or stimulating main male")
 		MasterScript.IVDTAllowsAdvance(false)
 		SomeoneNeedstoOrgasm = true
-	elseif  CurrentThread.GetTimeTotal() - timeOfLastRecordedFemaleOrgasm <= 7
-		Printdebug("Stage not advancing After Female orgasm for 7 seconds")
+	elseif  CurrentThread.GetTimeTotal() - timeOfLastRecordedFemaleOrgasm <= 5
+		Printdebug("Stage not advancing After Female orgasm for 5 seconds")
 		MasterScript.IVDTAllowsAdvance(false)
 		SomeoneNeedstoOrgasm = true
 	elseif currentlyPlayingSoundCount == 0 && currentlyPlayingSoundCountMale == 0
