@@ -1847,7 +1847,7 @@ endif
 			PlayGaggedSound()
 		endif 	
 	;male fucking somemore  from ending
-	elseif	!IsEnding() && PrevEndingLabel == "ENO" && MainMaleCanControl()
+	elseif	!IsEnding() && PrevEndingLabel == "ENO" && MainMaleCanControl() && timesGaped > 0
 
 			PlaySound(mainFemaleVoice.Oh, mainFemaleActor, requiredChemistry = 0 , soundPriority = 3 , SkipWait = true , debugtext="Oh")
 			Utility.Wait(Utility.RandomFloat(0.5, 1.5))

@@ -3471,13 +3471,6 @@ endfunction
 
 	
 ;/
-;future task
-;find and implement diffent cum noise. light medium heavy, very heavy
-;Enable Sexlab Voice and See how it goes
-;Add Schlong Adjustment
-;Penetration happened gape sound with IVDT before foreplay change
-;orgasm play too many times
-;if foreplay and play stage transition, its as if player is started fucking extended.
 
 >added new option to find and play custom stage from Stagemaker from Director Tools
 >Moved all changing animations options into one menu tree
