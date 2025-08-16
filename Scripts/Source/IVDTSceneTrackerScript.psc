@@ -389,12 +389,9 @@ Function ASLEndScene()	;manually end scene
 
 endfunction
 
-Bool FemaleisProcessingMaleOrgasm
-
 Event IVDTOnOrgasm(Form actorRef, Int thread)
 
-	  PrintDebug("IVDTOnOrgasm : " + thread + " (expected " + ThreadID + "), SceneActorMatch=" + (actorWithSceneTrackerSpell == mainFemaleActor) + ", TimeSinceLastFemaleOrgasm=" + (CurrentThread.GetTimeTotal() - timeOfLastRecordedFemaleOrgasm))
-	If thread != ThreadID  || actorWithSceneTrackerSpell != mainFemaleActor || CurrentThread.GetTimeTotal() - timeOfLastRecordedFemaleOrgasm <= 5
+	If thread != ThreadID  || actorWithSceneTrackerSpell != mainFemaleActor 
 		printdebug("Exiting early: Thread mismatch, wrong actor, or orgasm cooldown active.")
 		Return
 	EndIf
@@ -404,8 +401,8 @@ Event IVDTOnOrgasm(Form actorRef, Int thread)
 
 	if isLinearScene()
 		printdebug("Processing in Linear Scene branch.")
-
-		if (IsSuckingoffOther() || IsgettingPenetrated()) && actorHavingOrgasm != mainFemaleActor && sexlab.getsex(actorHavingOrgasm) != 1 && !LinearSceneCanOrgasm
+		;processing Male Orgasm Sound
+		if (IsSuckingoffOther() || IsgettingPenetrated()) && actorHavingOrgasm != mainFemaleActor && sexlab.getsex(actorHavingOrgasm) != 1
 			printdebug("Detected male orgasm during penetration/oral. Playing DefaultMaleOrgasm.")
 			PlaySound(DefaultMaleVoice.Orgasm, mainFemaleActor, requiredChemistry = 0, soundPriority = 3, waitForCompletion = False, debugtext ="DefaultMaleOrgasm")
 
@@ -414,48 +411,41 @@ Event IVDTOnOrgasm(Form actorRef, Int thread)
 				ASLAddThickCumleak()
 			endif
 		endif
-
-		if !FemaleisProcessingMaleOrgasm
-			printdebug("Processing female reaction to male orgasm.")
-			FemaleisProcessingMaleOrgasm = true
+		
+		if CurrentThread.GetTimeTotal() - timeOfLastRecordedFemaleOrgasm <= 5
+			return
+		endif
+		;processing Female Orgasm Sound
+		if !LinearSceneCanOrgasm
+			if IsSuckingoffOther()
+				PlaySound(mainFemaleVoice.MaleOrgasmOral, mainFemaleActor, requiredChemistry = 0, soundPriority = 3 , debugtext= "MaleOrgasmOral")
+			else
+				PlaySound(mainFemaleVoice.Oh, mainFemaleActor, requiredChemistry = 0, soundPriority = 3 , debugtext= "Oh")
+			endif
+		elseif LinearSceneCanOrgasm && actorHavingOrgasm == mainFemaleActor
+			ASLAddOrgasmSSquirt()
+			
 			if IsSuckingoffOther()
 				printdebug("Playing MaleOrgasmOral sound.")
 				PlaySound(mainFemaleVoice.MaleOrgasmOral, mainFemaleActor, requiredChemistry = 0, soundPriority = 3 , debugtext= "MaleOrgasmOral")
-			else
+			elseif !IsUnconcious()
 				if moanonly == 1
-					printdebug("Playing simple 'Oh' reaction to male orgasm.")
-					PlaySound(mainFemaleVoice.Oh, mainFemaleActor, requiredChemistry = 0, soundPriority = 3 , debugtext= "MaleOrgasmNonOral")
+					printdebug("Playing simple 'Oh' for female orgasm.")
+					PlaySound(mainFemaleVoice.Oh, mainFemaleActor, requiredChemistry = 0, soundPriority = 3 , debugtext= "Oh")
 				else
-					printdebug("Playing MaleOrgasmNonOral sound.")
-					PlaySound(mainFemaleVoice.MaleOrgasmNonOral, mainFemaleActor, requiredChemistry = 0, soundPriority = 3, debugtext= "MaleOrgasmNonOral")
+					printdebug("Playing FemaleOrgasm sound.")
+					RecordFemaleOrgasm()
+					PlaySound(mainFemaleVoice.Orgasm, mainFemaleActor, requiredChemistry = 0, soundPriority = 3, debugtext ="FemaleOrgasm" , Force = true)
 				endif
 			endif
-			FemaleisProcessingMaleOrgasm = false
-		endif
-
-		if actorHavingOrgasm == mainFemaleActor && !IsUnconcious() && CurrentThread.GetTimeTotal() - timeOfLastRecordedFemaleOrgasm > 5
-			printdebug("Main female orgasm detected. Starting orgasm sequence.")
-			FemaleisProcessingMaleOrgasm = True
-			int waitCounter = 0
-
-			ASLAddOrgasmSSquirt()
-			printdebug("Added orgasm squirt effect.")
-
-			if moanonly == 1
-				printdebug("Playing simple 'Oh' for female orgasm.")
-				PlaySound(mainFemaleVoice.Oh, mainFemaleActor, requiredChemistry = 0, soundPriority = 3 , debugtext= "Oh")
-			else
-				printdebug("Playing FemaleOrgasm sound.")
-				RecordFemaleOrgasm()
-				PlaySound(mainFemaleVoice.Orgasm, mainFemaleActor, requiredChemistry = 0, soundPriority = 3, debugtext ="FemaleOrgasm" , Force = true)
-			endif
-
+			
 			CommentedClosetoOrgasm = false
-			printdebug("Recording female orgasm in stats.")
+			RecordFemaleOrgasm()
 			ASLRemoveOrgasmSSquirt()
-			printdebug("Removed orgasm squirt effect.")
-			FemaleisProcessingMaleOrgasm = false
 		endif
+
+			
+		
 	else
 		printdebug("Processing in Non-Linear Scene branch.")
 

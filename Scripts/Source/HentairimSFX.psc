@@ -89,6 +89,7 @@ Event SFXOrgasm(Form actorhavingorgasm, Int thread)
 	;miscutil.printconsole("SFXOnStageStart On Orgasm Fire")	
 EndEvent
 
+
 Event OnUpdate()	
 	
 	HentairimUpdateStageData()
@@ -435,7 +436,9 @@ EndFunction
 
 float updateRate = 0.1
 Float Rate 
-
+float TimeLastReverseIn
+Float TimeLastReverseOut
+Bool CanPlayReverseIn
 ;Calculate play sound 
 Function CalculateAndPlayVelocitySFX()
     if FuckingPartner == none || FuckingPartnerInteractionType == 0
@@ -456,11 +459,13 @@ Function CalculateAndPlayVelocitySFX()
 
 	while Currentthread.getstatus() == 3 && DirectorLastLabelTime == MasterScript.GetDirectorLastLabelTime()  ; CurrentSceneID == CurrentThread.GetActiveScene() && currentStageID == CurrentThread.GetActiveStage()
 
-		velocity = Currentthread.GetVelocity(FuckingPartner, Actorref, FuckingPartnerInteractionType)
-		printdebug("Velocity : masterscript interaction types : " + masterscript.GetActorInteractiontypes(actorref))
-		printdebug("Velocity : " + Velocity + " | lastVelocity : " + LastVelocity + " | FuckingPartnerInteractionType : " + FuckingPartnerInteractionType)
+			velocity = Currentthread.GetVelocity(FuckingPartner, Actorref, FuckingPartnerInteractionType)
+			
+			PrintDebug("lastVelocity=" + lastVelocity as String + " | velocity=" + velocity as String)
+			
 			if lastVelocity >= 0 && velocity < 0 ; Reversal From Inside
-				printdebug("Play Reversal from Inside")
+				Float CurrentReverseOutTIme = CurrentThread.GetTimeTotal()
+				PrintDebug("Seconds Since Last Reverse Out : " + (CurrentReverseOutTime - TimeLastReverseOut) as String + " Seconds | CurrentReverseOutTime=" + CurrentReverseOutTime as String + " | TimeLastReverseOut=" + TimeLastReverseOut as String)
 				if StageShouldplayClap
 					printdebug("playing Impact Velocity")
 					ImpactVelocitySFX = GetImpactSoundToPlay(TimetoThrust)
@@ -470,35 +475,38 @@ Function CalculateAndPlayVelocitySFX()
 						printdebug("ImpactVelocitySFX : is none!")
 					endif
 				Endif	
-				
-					printdebug("playing Slush Velocity")
+
 					SlushVelocitySFX = GetSlushSoundToPlay(FuckingPartnerInteractionType, TimetoThrust)
 					if SlushVelocitySFX != none
+						printdebug("playing Slush Velocity")
 						SlushVelocitySFX.Play(FuckingPartner)
 					else
 						printdebug("SlushVelocitySFX : is none!")
 					endif
-				
+				TimeLastReverseOut = CurrentReverseOutTIme
 				TimetoThrust = 0
-			elseif lastVelocity <= 0 && velocity > 0  ;reversal from outside
-				printdebug("Play Reversal from outside")
-				printdebug("playing Slush Velocity")
+			elseif CanPlayReverseIn && lastVelocity <= 0 && velocity > 0  ;reversal from outside
+				printdebug("Velocity : " + Velocity + " | lastVelocity : " + LastVelocity + " | FuckingPartnerInteractionType : " + FuckingPartnerInteractionType)
+				Float CurrentReverseInTIme = CurrentThread.GetTimeTotal()
+				
+				PrintDebug("CurrentReverseInTime=" + CurrentReverseInTime as String + " | TimeLastReverseOut=" + TimeLastReverseOut as String + " | Seconds Since Last Reverse In=" + (CurrentReverseInTime - TimeLastReverseOut) as String + " Seconds")
 				SlushVelocitySFX = GetSlushSoundToPlay(FuckingPartnerInteractionType, TimetoThrust)
 				if SlushVelocitySFX != none
+					printdebug("playing Slush Velocity")
 					SlushVelocitySFX.Play(FuckingPartner)
 				else
 					printdebug("SlushVelocitySFX : is none!")
 				endif
-
+				TimeLastReverseIn = CurrentReverseInTIme
 			else
 				printdebug("Wait")
 				if Velocity > 0
 					TimetoThrust += updateRate
 				endif
 			endif
-
+			
 			Utility.wait(updateRate)
-
+			
 			LastVelocity = velocity
 	endwhile
 
@@ -676,6 +684,12 @@ Function HentairimUpdateStageData()
 		
 		UpdateLabels(actorref)
 		isintense = Isintense()
+		if isintense
+			CanPlayReverseIn = false
+		else
+			CanPlayReverseIn = true
+		endif
+		
 		printdebug("Thread Position : " + CurrentThread.GetPositionIdx(actorref))
 		printdebug("current Animation : " + CurrentSceneID)
 		printdebug("current StageID : " + currentStageID)
@@ -683,7 +697,7 @@ Function HentairimUpdateStageData()
 		
 		HentairimSFXRefreshSound()
 		UpdateFuckingPartner()
-		StageShouldplayClap = (SFXTag == "FC" || SFXTag == "MC"|| SFXTag == "SC" || CurrentThread.HasStageTag("Doggy") || CurrentThread.HasStageTag("DoggyStyle")) && (IsGivingVaginalPenetration() || IsGivingAnalPenetration())
+		StageShouldplayClap = EndingLabel != "ENO" && EndingLabel != "ENI" && (SFXTag == "FC" || SFXTag == "MC"|| SFXTag == "SC" || CurrentThread.HasStageTag("Doggy") || CurrentThread.HasStageTag("DoggyStyle")) && (IsGivingVaginalPenetration() || IsGivingAnalPenetration())
 		
 		
 		DirectorLastLabelTime = MasterScript.GetDirectorLastLabelTime()

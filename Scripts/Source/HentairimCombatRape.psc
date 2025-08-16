@@ -112,14 +112,15 @@ Event OnHit(ObjectReference akAggressor, Form akSource, Projectile akProjectile,
 	OnHitprocessing = false
 EndEvent
 
-
-Bool Function HealthWithinRapeLimit(actor char)
+Bool Function HealthWithinRapeLimit(Actor char)
 	float basehealth = char.GetBaseActorValue("Health")
-	float Currenthealth = char.GetActorValue("Health")
-	float RemainingHealthPc = Currenthealth / basehealth
-;	miscutil.PrintConsole("Health Check - Base: " + basehealth + ", Current: " + Currenthealth + ", %: " + RemainingHealthPc + ", Range: " + minhealthpercentagetotrigger + "-" + maxhealthpercentagetotrigger + ", Pass: " + (RemainingHealthPc >= minhealthpercentagetotrigger && RemainingHealthPc <= maxhealthpercentagetotrigger))
+	float currenthealth = char.GetActorValue("Health")
+	float remainingHealthPc = currenthealth / basehealth
+	bool passCheck = remainingHealthPc >= minhealthpercentagetotrigger && remainingHealthPc <= maxhealthpercentagetotrigger
 
-	return RemainingHealthPc >= minhealthpercentagetotrigger && RemainingHealthPc <= maxhealthpercentagetotrigger
+	MiscUtil.PrintConsole("[Hentairim] HealthWithinRapeLimit: base=" + basehealth + ", current=" + currenthealth + ", pct=" + remainingHealthPc + ", range=" + minhealthpercentagetotrigger + "-" + maxhealthpercentagetotrigger + ", pass=" + passCheck)
+
+	return passCheck
 EndFunction
 
 function RefreshFollowersTrackers()
@@ -155,21 +156,41 @@ Bool Function CanGetRaped(actor char)
 	endIf
 EndFunction
 
-Bool Function CanTriggerOnAttack(Bool isPowerAttack , bool isBlocked)
-	float blockmultiplier = 1
+Bool Function CanTriggerOnAttack(Bool isPowerAttack, Bool isBlocked)
+	float blockmultiplier = 1.0
 	if isBlocked
 		blockmultiplier = 0.3
 	endif
+
+	;MiscUtil.PrintConsole("[Hentairim] CanTriggerOnAttack: enable=" + enablehentairimcombatrape + ", isPower=" + isPowerAttack + ", isBlocked=" + isBlocked + ", blockmult=" + blockmultiplier)
+
 	if enablehentairimcombatrape != 1
 		return false
-	elseif isPowerAttack && chancetotriggeronpowerattack * blockmultiplier >= Utility.randomfloat(0,1)
-		return true
-	elseif chancetotriggeronnormalattack * blockmultiplier >= Utility.randomfloat(0,1)
-		return true
+	elseif isPowerAttack
+		float rollPower = Utility.RandomFloat(0.0, 1.0)
+		float chancePower = chancetotriggeronpowerattack * blockmultiplier
+		;MiscUtil.PrintConsole("[Hentairim] PowerAttack: chance=" + chancePower + ", roll=" + rollPower + ", pass=" + (chancePower >= rollPower))
+		if chancePower >= rollPower
+			return true
+		endif
+		float rollNormal = Utility.RandomFloat(0.0, 1.0)
+		float chanceNormal = chancetotriggeronnormalattack * blockmultiplier
+		;MiscUtil.PrintConsole("[Hentairim] NormalAttackAfterPowerFail: chance=" + chanceNormal + ", roll=" + rollNormal + ", pass=" + (chanceNormal >= rollNormal))
+		if chanceNormal >= rollNormal
+			return true
+		endif
 	else
-		return false
-	endIf
+		float rollNormal = Utility.RandomFloat(0.0, 1.0)
+		float chanceNormal = chancetotriggeronnormalattack * blockmultiplier
+		;MiscUtil.PrintConsole("[Hentairim] NormalAttack: chance=" + chanceNormal + ", roll=" + rollNormal + ", pass=" + (chanceNormal >= rollNormal))
+		if chanceNormal >= rollNormal
+			return true
+		endif
+	endif
+
+	return false
 EndFunction
+
 
 Function SetHentairimTimerandSceneType()
 	storageutil.setfloatvalue(none,"HentairimTimerModifier",pccombatrapetimermodifier)

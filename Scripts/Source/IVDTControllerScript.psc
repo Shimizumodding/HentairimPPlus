@@ -211,7 +211,7 @@ Event DirectorSceneStart(string eventName, string argString, float argNum, form 
 	SceneExtend = false
 	RunCustomScene = CheckifShouldRunCustomScene()
 	if !RunCustomScene
-		if utility.randomint(1,100) <= chancetostartforeplay && PCPosition == 0 && !currentthread.GetSubmissive(playerref)
+		if utility.randomint(1,100) <= chancetostartforeplay && PCPosition == 0 && !currentthread.GetSubmissive(playerref) && (currentthread.HasSceneTag("Vaginal") || currentthread.HasSceneTag("Anal"))
 			printdebug("Starting Foreplay")
 			StartForeplayScene()
 		endif
@@ -3470,21 +3470,8 @@ endfunction
 
 
 	
-;/
+;v2.0.2
 
->added new option to find and play custom stage from Stagemaker from Director Tools
->Moved all changing animations options into one menu tree
->Fix conditions for SFX not playing for Creatures.
->Some Optimizations
->Added New Linear Scene option
->Added Foreplay control
->add identification for actors who can counter rape or extend scene
->Combat Rape Option for Short Rape
->added Cosplay Basic and Gala armor to armorswapping
->Expressions Tongue usage conditions to check only once per stage
->Enabling IVDT will Mute Player in Sexlab
->Add Schlong Adjustments Function
+;>fix IVDT handling of multi Orgasm
+; Update Intense Scenes to not process Reverse In for optimization
 
-known issues
-if close swf menu with N, scene ends prematurely at the last scene. not sure if it only happens to me, but keep the menu initialized.
-/; 
