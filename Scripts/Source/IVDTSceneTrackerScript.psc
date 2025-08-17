@@ -2590,7 +2590,7 @@ Function DisableOrgasm()
 EndFunction
 
 Function EnableOrgasm()
-	MasterScript.DisableOrgasm(MainfemaleActor)
+	MasterScript.EnableOrgasm(MainfemaleActor)
 EndFunction
 
 ;------------------

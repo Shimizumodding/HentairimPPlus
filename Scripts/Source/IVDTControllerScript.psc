@@ -262,6 +262,7 @@ Function DirectorEndScene()
 	CurrentThread = none
 	CurrentSceneID = none
 	CurrentStageID = none
+	ProcessedOriginalScale = false
 	PlayerInScene = false
 	OriginalSceneID = ""
 	isPlayingForeplayScene = false
@@ -444,6 +445,7 @@ Event OnUpdate()
 		CurrentStageID = CurrentThread.GetActiveStage()
 		updatelabelsarr(CurrentSceneID, GetLegacyStageNum(CurrentSceneID, CurrentStageID))
 		if enablehentairimscaling == 1 && currentSceneID != CurrentThread.GetActiveScene()
+			ResetScaling()
 			HentairimScaling()
 			
 		EndIf
@@ -965,7 +967,7 @@ EndFunction
 
 ;--------------------------------HENTAIRIM SCALING FUNCTIONS START--------------------------------;
 Float[] actorlistOriginalScalearr
-
+bool ProcessedOriginalScale
 Function HentairimScaling()
 	int z = 0
 	while z < actorlist.Length
@@ -1266,17 +1268,23 @@ Function AddtoTimer(float value)
 endFunction
 
 
-
+bool IsStageOffset 
 Function AdjustAlignment(int Movement , Bool Modifier = false)
 	float offsetmod = 1
 	if Modifier
 		offsetmod = -1
 	endif
+	
+	string stageid = ""
+	if IsStageOffset
+		stageid = currentStageID
+	endif
+	
 	int z = 0
 	while z < PositionsToAlign.length
-		float[] OffSet = sexlabregistry.GetStageOffset(CurrentSceneID, "", PositionsToAlign[z])
+		float[] OffSet = sexlabregistry.GetStageOffset(CurrentSceneID, stageid, PositionsToAlign[z])
 		 OffSet[Movement] = OffSet[Movement] + offsetmod
-		sexlabregistry.SetStageOffsetA(currentsceneid ,"", PositionsToAlign[z] , OffSet) 
+		sexlabregistry.SetStageOffsetA(currentsceneid ,stageid, PositionsToAlign[z] , OffSet) 
 		z += 1
 	EndWhile
 	currentthread.skipto(currentstageid)
@@ -2069,10 +2077,11 @@ Function OpenDirectorTools()
 	elseif result == 2 ; Resolve Scaling
 		int z = 0
 		ResetScaling()
-		while z < actorList.length
-			actorList[z].SetScale(GetAnimSpecialScaleValue(z))
-			z += 1
-		endwhile
+		HentairimScaling()
+		;while z < actorList.length
+		;	actorList[z].SetScale(GetAnimSpecialScaleValue(z))
+		;	z += 1
+		;endwhile
 	elseif result == 3 ;Actor Alignments
         ShowAlignmentActorList()		
 	elseif result == 4 ;Actor Schlong Alignments
@@ -2582,6 +2591,12 @@ Function ShowSchlongAlignmentActorList()
 		Inputbox.OpenMenu()
 		int AdjustmentValue = Inputbox.GetResultString() as int
 		;int AdjustmentValue = AdjustmentValueSlider.show("Adjust Schlong Position",-9,9)
+		if AdjustmentValue > 9
+			AdjustmentValue = 9
+		elseif AdjustmentValue < -9
+			AdjustmentValue = -9
+		endif
+		
 		if AdjustmentValue <= 9 ||  AdjustmentValue >= -9
 			printdebug("ActortoAdjust Schlong AdjustmentValue: " + AdjustmentValue)
 			Debug.SendAnimationEvent(ActortoAdjust, "SOSBend" + AdjustmentValue as string)
@@ -2618,7 +2633,12 @@ endfunction
 Function ShowAlignmentActorList()
 	b612_SelectList Actorlistmenu = GetSelectList()
 	;prepare Actorlist Names
-	String[] ActorlistNames
+	String[] ActorlistNames = new string[1]
+	if IsStageOffset
+		ActorlistNames[0] = "Stage Alignment"
+	else
+		ActorlistNames[0] = "Scene Alignment"
+	endif
 	
 	int z = 0
 	while z < actorlist.Length
@@ -2636,6 +2656,20 @@ Function ShowAlignmentActorList()
 		return
 	EndIf
 	
+	;Toggle Scene or stage offset
+	if position == 0
+		if IsStageOffset
+			IsStageOffset = false
+			Announce("Actor Alignment by Scene")
+		else
+			IsStageOffset = true
+			Announce("Actor Alignment by Stage")
+		endif
+		return
+	endif
+	
+	;remove or add positions to be aligned
+	position -= 1
 	if PositionsToAlign.find(position) >= 0 ;remove from actors to Align if existing
 		PositionsToAlign = papyrusutil.removeint(PositionsToAlign,position)
 		debug.notification("Position " + position + " Removed For Alignment Function")
@@ -3470,8 +3504,8 @@ endfunction
 
 
 	
-;v2.0.2
+;v2.0.3
 
-;>fix IVDT handling of multi Orgasm
-; Update Intense Scenes to not process Reverse In for optimization
-
+;fix volume SFX
+; add option to toggle between scene or stage offset
+; Add HYbrid Stage Type

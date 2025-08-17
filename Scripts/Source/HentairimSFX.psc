@@ -117,7 +117,7 @@ EndEvent
 
 String ConfigFile  = "HentairimSFX/Config.json"
 
-int volume
+float volume
 int enableprintdebug
 ;Velocity Based Sound Forms
 Sound SmallWetSlush
@@ -180,7 +180,7 @@ Sound SFXtoPlay
 int usevelocity
 
 Function InitializeConfigandForms()
-volume = JsonUtil.GetIntValue(ConfigFile, "volume" ,100)
+volume = JsonUtil.GetIntValue(ConfigFile, "volume" ,100) as float /100
 usevelocity = JsonUtil.GetIntValue(ConfigFile, "usevelocity" ,0)
 enableprintdebug = JsonUtil.GetIntValue(ConfigFile, "printdebug" ,0)
 
