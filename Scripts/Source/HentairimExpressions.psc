@@ -14,9 +14,7 @@ int ExpressionPhase
 int variance 
 float speed = 0.50
 string LabelGroup
-int[] Interactiontypes
-int[] PartnerInteractiontypes
-	
+
 Event OnEffectStart(Actor akTarget, Actor akCaster)
 	Actorref = akTarget
 	PrintDebug("Effect Start for " + Actorref.getdisplayname() )	
@@ -35,14 +33,8 @@ PrintDebug("Perform Initialization")
 	CurrentThread = Sexlab.GetThreadByActor(Actorref)
 	actorlist = CurrentThread.GetPositions()
 	
-	int X = 0
 	;establish positions
-	while x < actorlist.length
-		if Actorref == actorlist[x]
-			position = X
-		Endif
-		x += 1
-	endwhile
+	position = CurrentThread.GetPositionIdx(actorref)
 	
 	RegisterForTheEventsWeNeed()
 	
@@ -63,7 +55,7 @@ PrintDebug("Perform Initialization")
 	;Base Hentairim Preparation
 	InitializeConfigandForms()
 	HentairimPrepare()	
-	
+	CheckHasMFEE()
 	printdebug("initialized complete")
 	RegisterForSingleUpdate(0.1)
 EndFunction
@@ -82,7 +74,9 @@ EndEvent
 
 
 Event ExpressionsOnStageStart(string eventName, string argString, float argNum, form sender)
-	
+	if threadid == argstring
+		position = currentthread.getpositionidx(actorref)
+	endif
 EndEvent
 
 float LastOrgasmtime
@@ -110,7 +104,11 @@ Event OnUpdate()
 	endwhile
 		
 	HentairimUpdateStageData()
-
+	
+	if (IsBroken() && enableahegao == 1) || (IsCunnilingus() && cunusetongue == 1) 
+		printdebug("Adding Tongue")
+		AddTongue()
+	endif
 	
 	;if still orgasming, maintain orgasm face
 	if GetSecondsSinceLastOrgasm() > 4
@@ -261,7 +259,7 @@ Event OnUpdate()
 					MfgConsoleFunc.SetModifier(actorref, 11, ahegaolookupmodifier) ;look up 50
 				endif 
 				
-			elseif enableahegao == 1 && (IsBroken() || ishugepp() || ((IsGettingAnallyPenetrated() || IsGettingVaginallyPenetrated() )))
+			elseif enableahegao == 1 && (IsBroken() || (ishugepp() && (IsGettingAnallyPenetrated() || IsGettingVaginallyPenetrated() )))
 				PhaseExpressionsArr[ExpressionIndex + 16] = BrokenOverride[ExpressionIndex + 16] as int
 				if MuFacialExpressionExtended.GetExpressionValueByNumber(actorref,0,0) != 100 && HasMFEEVanillaRace
 				
@@ -430,25 +428,33 @@ endfunction
 
 Function AddTongue()
 
-if  MFEEAddAhegao || WearingMask(actorref) != none || IsSuckingoffOther() || EnableTongue != 1 || HasDeviousGag(actorref)  || IsUnconcious() || EquippedTongue()
-	return
-endif
+	printdebug("AddTongue: Starting. MFEEAddAhegao=" + MFEEAddAhegao + " WearingMask=" + (WearingMask(actorref) != none) + " IsSuckingoffOther=" + IsSuckingoffOther() + " EnableTongue=" + EnableTongue + " HasDeviousGag=" + HasDeviousGag(actorref) + " IsUnconcious=" + IsUnconcious() + " EquippedTongue=" + EquippedTongue())
 
-if HasMFEE && EnabledMFEETongue == 1 ;erin tongue expression
-	MFEEAddTongue = true
-else
-	if	Game.GetModbyName("sr_fillherup.esp") != 255
-	armor temptongue 
-		
-		if FHUTongueTypeArmor
-			actorref.addItem(FHUTongueTypeArmor , abSilent=true)
-			actorref.EquipItem(FHUTongueTypeArmor , abSilent=true)
-		Endif
-	
+	if MFEEAddAhegao || WearingMask(actorref) != none || IsSuckingoffOther() || EnableTongue != 1 || HasDeviousGag(actorref) || IsUnconcious() || EquippedTongue()
+		printdebug("AddTongue: Conditions blocked tongue, exiting early.")
+		return
 	endif
-endif
-endfunction
 
+	if HasMFEE && EnabledMFEETongue == 1
+		printdebug("AddTongue: Using MFEE tongue expression.")
+		MFEEAddTongue = true
+	else
+		if Game.GetModByName("sr_fillherup.esp") != 255
+			printdebug("AddTongue: sr_fillherup.esp detected, equipping FHUTongueTypeArmor if available.")
+			armor temptongue 
+			
+			if FHUTongueTypeArmor
+				printdebug("AddTongue: Equipping FHUTongueTypeArmor=" + FHUTongueTypeArmor)
+				actorref.AddItem(FHUTongueTypeArmor, abSilent = true)
+				actorref.EquipItem(FHUTongueTypeArmor, abSilent = true)
+			else
+				printdebug("AddTongue: FHUTongueTypeArmor not defined, skipping equip.")
+			endif
+		else
+			printdebug("AddTongue: sr_fillherup.esp not detected, skipping FHU tongue.")
+		endif
+	endif
+EndFunction
 
 Function RemoveTongue()
 
@@ -747,6 +753,7 @@ Int currentStage = -1
 Int ThreadID = -1
 Faction HentairimBroken
 bool IsVictim
+float DirectorLastLabelTime
 
 Function HentairimPrepare()
 	printdebug("--------------------Hentairim Prepare Initial Data START-----------------")
@@ -762,11 +769,12 @@ Function HentairimPrepare()
 	printdebug("--------------------Hentairim Prepare Initial Data END-----------------")
 endfunction
 
-float DirectorLastLabelTime
+
 
 Function HentairimUpdateStageData()
 	printdebug("Updating Labels")
 
+	printdebug("DirectorLastLabelTimeCheck: local=" + DirectorLastLabelTime + " master=" + MasterScript.GetDirectorLastLabelTime())
 	if DirectorLastLabelTime != MasterScript.GetDirectorLastLabelTime()	
 		printdebug("Animation or Stage is Different. Updating Stage Data")
 		CurrentSceneID = CurrentThread.GetActiveScene()
@@ -774,22 +782,20 @@ Function HentairimUpdateStageData()
 		currentstage = GetLegacyStageNum(CurrentSceneID, currentStageID)
 		
 		UpdateLabels(actorref)	
-		Interactiontypes = MasterScript.GetActorInteractiontypes(actorref)
-		PartnerInteractiontypes = MasterScript.GetActorPartnerInteractiontypes(actorref)
+
 		printdebug("PC Thread Position : " + CurrentThread.GetPositionIdx(Actorref))
 		printdebug("current Animation : " + CurrentSceneID)
 		printdebug("current StageID : " + currentStageID)
 		printdebug("current stage number: " + currentstage)
 		
-		elseif !EquippedTongue()
-		
-		int rand = utility.randomint(1,100)
 
-		if (IsBroken() && enableahegao == 1) || (IsCunnilingus() && cunusetongue == 1) || (Isintense() && IsgettingPenetrated() && rand <= chancetostickouttongueduringintense)  ||  ((IsCowgirl() || IsGivingAnalPenetration() || IsGivingVaginalPenetration()) && !IsVictim && rand <= chancetostickouttongueduringattacking)
+		int rand = Utility.RandomInt(1,100)
+		printdebug("TongueCheck: rand=" + rand + " enableahegao=" + enableahegao + " cunusetongue=" + cunusetongue + " chancetostickouttongueduringintense=" + chancetostickouttongueduringintense + " chancetostickouttongueduringattacking=" + chancetostickouttongueduringattacking + " IsBroken=" + IsBroken() + " IsCunnilingus=" + IsCunnilingus() + " IsIntense=" + IsIntense() + " IsgettingPenetrated=" + IsgettingPenetrated() + " IsCowgirl=" + IsCowgirl() + " IsGivingAnalPenetration=" + IsGivingAnalPenetration() + " IsGivingVaginalPenetration=" + IsGivingVaginalPenetration() + " IsVictim=" + IsVictim)
+		if !EquippedTongue() &&(IsBroken() && enableahegao == 1) || (IsCunnilingus() && cunusetongue == 1) || (IsIntense() && IsGettingPenetrated() && rand <= chancetostickouttongueduringintense) || ((IsCowgirl() || IsGivingAnalPenetration() || IsGivingVaginalPenetration()) && !IsVictim && rand <= chancetostickouttongueduringattacking)
 			printdebug("Adding Tongue")
 			AddTongue()
 		endif
-		
+
 		;remove mask if giving BJ
 		if IsSuckingoffOther()
 			unequipmask(actorref)
@@ -835,12 +841,12 @@ Bool Function IsGettingStimulated()
 endfunction
 
 Bool Function IsSuckingoffOther()
-	return OralLabel == "SBJ" ||  OralLabel == "FBJ" || FindInt(Interactiontypes,3) > -1 || FindInt(Interactiontypes,5) > -1
+	return OralLabel == "SBJ" ||  OralLabel == "FBJ" 
 endfunction
 
 Bool Function IsGettingDoublePenetrated()
 
-return PenetrationLabel == "SDP" || PenetrationLabel == "FDP" || (FindInt(Interactiontypes,1) > -1 && FindInt(Interactiontypes,2) > -1)
+return PenetrationLabel == "SDP" || PenetrationLabel == "FDP" 
 endfunction
 
 Bool Function IsgettingPenetrated()
@@ -848,27 +854,27 @@ Bool Function IsgettingPenetrated()
 endfunction
 
 Bool Function IsGettingVaginallyPenetrated()
-	return FindInt(Interactiontypes,1) > -1 || PenetrationLabel == "SVP" || PenetrationLabel == "FVP" || PenetrationLabel == "SCG" || PenetrationLabel == "FCG" || PenetrationLabel == "SDP" || PenetrationLabel == "FDP"
+	return PenetrationLabel == "SVP" || PenetrationLabel == "FVP" || PenetrationLabel == "SCG" || PenetrationLabel == "FCG" || PenetrationLabel == "SDP" || PenetrationLabel == "FDP"
 endfunction
 
 Bool Function IsGettingAnallyPenetrated() 
-	return FindInt(Interactiontypes,2) > -1 || PenetrationLabel == "SAP" || PenetrationLabel == "FAP"  || PenetrationLabel == "SAC" || PenetrationLabel == "FAC" || PenetrationLabel == "SDP" || PenetrationLabel == "FDP"
+	return PenetrationLabel == "SAP" || PenetrationLabel == "FAP"  || PenetrationLabel == "SAC" || PenetrationLabel == "FAC" || PenetrationLabel == "SDP" || PenetrationLabel == "FDP"
 endfunction
 
 Bool Function IsKissing()
-	return OralLabel == "KIS" || FindInt(Interactiontypes,10) > -1
+	return OralLabel == "KIS"
 endfunction
 
 Bool Function IsCunnilingus()
-	return FindInt(PartnerInteractiontypes,13) > -1 || FindInt(PartnerInteractiontypes,7) > -1 || OralLabel == "CUN"
+	return OralLabel == "CUN"
 endfunction
 
 Bool Function IsGivingAnalPenetration()
-	return FindInt(PartnerInteractiontypes,2) > -1 || PenisActionLabel == "FDA" || PenisActionLabel == "SDA"
+	return PenisActionLabel == "FDA" || PenisActionLabel == "SDA"
 endfunction
 
 Bool Function IsGivingVaginalPenetration()
-	return FindInt(PartnerInteractiontypes,1) > -1 || PenisActionLabel =="FDV" || PenisActionLabel == "SDV"
+	return PenisActionLabel =="FDV" || PenisActionLabel == "SDV"
 endfunction
 
 Bool Function IsLeadIN()
@@ -876,7 +882,7 @@ Bool Function IsLeadIN()
 endfunction 
 
 Bool Function IsGettingSuckedoff()
-	return FindInt(PartnerInteractiontypes,5) > -1 || FindInt(PartnerInteractiontypes,3) > -1 || PenisActionLabel == "SMF" ||  PenisActionLabel == "FMF"	 
+	return PenisActionLabel == "SMF" ||  PenisActionLabel == "FMF"	 
 endfunction
 
 Bool Function IsCowgirl()

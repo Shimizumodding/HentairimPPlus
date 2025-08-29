@@ -17,6 +17,7 @@ int[] MasterPartnerInteractiontypes
 bool StageShouldplayClap = false
 bool isplayer
 bool isReceiver ; position 0
+
 Event OnEffectStart(Actor akTarget, Actor akCaster)
 	actorref = akTarget
 	PrintDebug("Effect Start")	
@@ -34,15 +35,9 @@ Function PerformInitialization()
 	Gender = sexlab.GetGender(actorref)
 	IsPlayer = actorref == playerref
 	isReceiver = actorref == actorlist[0]
-		;establish positions
-	int x = 0
-	while x < actorlist.length
-		if actorref == actorlist[x]
-			position = X
-			x += 1000
-		Endif
-		x += 1
-	endwhile
+	
+	;establish positions
+	position = currentthread.getpositionidx(actorref)
 	
 	RegisterForTheEventsWeNeed()
 	
@@ -77,12 +72,13 @@ Function RegisterForTheEventsWeNeed()
 EndFunction
 
 Event SFXSceneEnd(string eventName, string argString, float argNum, form sender);
-	PrintDebug("Scene end")
-	RemoveSFX()
+	
 EndEvent
 
 Event SFXOnStageStart(string eventName, string argString, float argNum, form sender);
-	
+	if threadid == argstring
+		position = currentthread.getpositionidx(actorref)
+	endif
 EndEvent
 
 Event SFXOrgasm(Form actorhavingorgasm, Int thread) 
@@ -98,18 +94,23 @@ Event OnUpdate()
 		PrintDebug("no thread. remove Hentairim SFX")	
 		RemoveSFX()
 	endif
-
-	if (IsGivingAnalPenetration() || IsGivingVaginalPenetration()) && !HasCreature() && usevelocity == 1 ;only use velocityfx for non creatures scene as no data is available
-		printdebug("Running Velocity SFX")
-		CalculateAndPlayVelocitySFX() ;Velocity Based SFX from reversal
+	
+	if position > 0
+	
+		if (IsGivingAnalPenetration() || IsGivingVaginalPenetration()) && !HasCreature() && usevelocity == 1 ;only use velocityfx for non creatures scene as no data is available
+			printdebug("Running Velocity SFX")
+			CalculateAndPlayVelocitySFX() ;Velocity Based SFX from reversal
+		else
+			printdebug("Running Normal SFX")
+			PlayHentairimSFX()
+		endif
+		if Isintense
+			updateRate = 0.05
+		else
+			updateRate = 0.1
+		endif
 	else
-		printdebug("Running Normal SFX")
-		PlayHentairimSFX()
-	endif
-	if Isintense
-		updateRate = 0.05
-	else
-		updateRate = 0.1
+		updateRate = 3
 	endif
 	RegisterForSingleUpdate(updateRate)
 	
@@ -553,7 +554,7 @@ endfunction
 
 Function PlayHentairimSFX()
 	printdebug("Playing Normal Hentairim SFX")
-	while Currentthread.getstatus() == 3 && SFXtoPlay && CurrentSceneID == CurrentThread.GetActiveScene() && currentStageID == CurrentThread.GetActiveStage()
+	while Currentthread.getstatus() == 3 && DirectorLastLabelTime == MasterScript.GetDirectorLastLabelTime()
 		
 		PlaySound( SFXtoPlay , actorlist[0] , true)
 		utility.wait(0.1)
@@ -585,36 +586,20 @@ Function HentairimSFXRefreshSound()
 			SFXtoPlay = Kissing ; KISSING SOUND
 		endif
 	
-	elseif IsGettingDoublePenetrated()
-	printdebug("Is Getting Double Penetrated" )
-		if	isintense
+	elseif IsGivingAnalPenetration() || IsGivingVaginalPenetration()
+	printdebug("Is giving penetration" )
+		if	isintense && ishugepp
 			SFXtoPlay = HeavySlushing
 		else
-			SFXtoPlay = RapidSlushing
+			SFXtoPlay = MediumSlushing
 		endif
-	elseif IsgettingPenetrated()
-	printdebug("Is getting Penetrated" )
-		if isintense
-			printdebug("Isintense" )
-			if	ishugepp
-				SFXtoPlay = HeavySlushing
-			else
-				SFXtoPlay = MediumSlushing
-			endif
-		else
-			if	ishugepp
-				SFXtoPlay = MediumSlushing
-			else
-				SFXtoPlay = LightSlushing
-			endif
-		endif
-	elseif IsSuckingoffOther()
+	elseif IsGettingSuckedoff()
 		if isintense
 			SFXtoPlay = FastBlowjob
 		else
 			SFXtoPlay = SlowBlowjob
 		endif
-	elseif IsGettingStimulated()
+	elseif IsStimulatingOthers()
 	printdebug("IsGettingStimulated" )
 		if isintense
 			SFXtoPlay = MediumSlushing
@@ -689,8 +674,7 @@ Function HentairimUpdateStageData()
 		else
 			CanPlayReverseIn = true
 		endif
-		
-		printdebug("Thread Position : " + CurrentThread.GetPositionIdx(actorref))
+	
 		printdebug("current Animation : " + CurrentSceneID)
 		printdebug("current StageID : " + currentStageID)
 		printdebug("current stage number: " + currentstage)
@@ -746,6 +730,10 @@ endfunction
 
 Bool Function IsGettingStimulated()
 	return Stimulationlabel == "SST" ||  Stimulationlabel == "FST"
+endfunction
+
+Bool Function IsStimulatingOthers()
+	return MasterScript.GetStimulationlabel(actorlist[0]) == "SST" ||  MasterScript.GetStimulationlabel(actorlist[0]) == "FST"  ||  MasterScript.GetStimulationlabel(actorlist[0]) == "BST" 
 endfunction
 
 Bool Function IsSuckingoffOther()

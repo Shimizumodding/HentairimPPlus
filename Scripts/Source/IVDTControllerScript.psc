@@ -26,6 +26,7 @@ bool PCisAggressor
 Bool AllFemale
 bool PCisReceiving
 bool PCisVictim
+
 int PCposition
 ;string PCPositionHentairimTags
 ;labels and interaction times
@@ -80,9 +81,6 @@ Spell ExpressionsSpell
 Spell ResistanceSpell
 ;others
 Faction schlongfaction
-keyword TNG_Gentlewoman
-keyword TNG_XL 
-keyword TNG_L
 faction HentairimBroken
 faction HentairimResistanceFaction
 Faction HentairimDoNotDisturbFaction
@@ -94,6 +92,7 @@ bool isPlayingForeplayScene
 int[] PCInteractionTypes
 int[] PCPartnerInteractionTypes
 int linearsceneenjoymentendstagetopup
+int linearscenechanceforfemaletoorgasmasvictim
 
 Bool DoneLinearSceneOrgasm
 ;Called first time ever the mod is loaded
@@ -130,11 +129,7 @@ endif
 if Game.GetModbyName("Schlongs of Skyrim.esp") != 255
 	schlongfaction = Game.GetFormFromFile(0xAFF8 , "Schlongs of Skyrim.esp") as Faction
 EndIf
-if Game.GetModbyName("TheNewGentleman.esp") != 255
-	TNG_Gentlewoman = Game.GetFormFromFile(0xFF8, "TheNewGentleman.esp") as Keyword
-	TNG_XL = Game.GetFormFromFile(0xFE5, "TheNewGentleman.esp") as Keyword
-    TNG_L = Game.GetFormFromFile(0xFE4, "TheNewGentleman.esp") as Keyword
-endif
+
 if Game.GetModbyName("HentairimResistance.esp") != 255
 	HentairimBroken = Game.GetFormFromFile(0x802, "HentairimResistance.esp") as Faction
 endif
@@ -151,9 +146,6 @@ if !ResistanceSpell && Game.GetModbyName("HentairimResistance.esp") != 255
 	WritetoErrorlogs("Director", "Resistance Spell is Missing! Make Sure the Mod is properly installed and Plugin Enabled")
 endif
 
-;workarounds male actors to show male animations for female only
-
-
 EndFunction
 
 Function RegisterForTheEventsWeNeed()
@@ -165,12 +157,21 @@ EndFunction
 
 Event DirectorStageStart(string eventName, string argString, float argNum, form sender)
 	if CurrentThread
+	
+		while CurrentThread.GetStatus() == 2
+			utility.wait(0.1)
+		endwhile
+		
 		LoadStageSpeed() ;load saved speed
 		LoadSchlongAdjustment() ;load saved schlong adjustments
+		actorlist = currentthread.Getpositions()
 		;trigger update for creatureframework
 		if currentSceneID != CurrentThread.GetActiveScene() 
+			IsStageOffset = false
 			DoneLinearSceneOrgasm = false
 			TriggerUpdateforCreatures()
+			utility.wait(1.5)
+			ResolveScaling()
 		endif
 	endif
 EndEvent
@@ -181,6 +182,7 @@ Event DirectorSceneStart(string eventName, string argString, float argNum, form 
 	;Hentairim is for handling player scenes only. 
 	playerref = game.getplayer() ;player
 	printdebug("Sexlab Scene Detected")
+	UpdateNow = true
 	if PlayerInScene || !Sexlab.GetThreadByActor(PlayerRef)
 		printdebug("Sexlab Scene Does not Involve Player.Ignored")
 		Return
@@ -192,7 +194,7 @@ Event DirectorSceneStart(string eventName, string argString, float argNum, form 
 	CustomStageNum = 0
 	CustomSceneTags = new string[1]
 	CustomSceneTags = papyrusutil.RemoveString(CustomSceneTags , CustomSceneTags[0])
-	TimertoAdvance = 0 
+	TimertoAdvance = 0
 	UpdateNow = false
 	Timerdebt = 0
 	StorageUtil.SetIntValue(None, "DirectorAdvanceStage", 0) ;default no directory signal to have processes be ready
@@ -227,6 +229,9 @@ Event DirectorSceneStart(string eventName, string argString, float argNum, form 
 	
 	PositionsToAlign = papyrusutil.pushint(PositionsToAlign,0)
 	
+	while CurrentThread.GetStatus() == 2
+		utility.wait(0.1)
+	endwhile
 	
 	AddtoTimer(GetTimer()) ;calculate starting timer to advance
 	AddTrackerToSceneIfApplicable(argString)
@@ -236,7 +241,7 @@ Event DirectorSceneStart(string eventName, string argString, float argNum, form 
 	printdebug("CurrentStageID :" + CurrentStageID)
 	printdebug("actorList :" + actorList)
 	printdebug("Scene start")
-	
+	UpdateNow = false
 	RegisterForSingleUpdate(0.1)
 EndEvent
 
@@ -264,6 +269,7 @@ Function DirectorEndScene()
 	CurrentStageID = none
 	ProcessedOriginalScale = false
 	PlayerInScene = false
+	LastManualAdvancetime = 0 
 	OriginalSceneID = ""
 	isPlayingForeplayScene = false
 	DoneLinearSceneOrgasm = false
@@ -274,6 +280,7 @@ Function DirectorEndScene()
 	storageutil.Setintvalue(none,"HentairimNextnup",0)
 	updaterate = 0.5
 	if EnableExpressions == 1
+		utility.wait(3)
 		resetexpressions()
 	endif
 	printdebug("Hentairim Director Scene END")
@@ -301,7 +308,7 @@ Event OnUpdate()
 	printdebug("Thread Total Time : " + CurrentThread.GetTimeTotal())
 	;check for key being held down
 	if Input.IsKeyPressed(directortoolskey)
-	printdebug("Director Tools key pressed.")
+	printdebug("Director Tools key held.")
 	OpenDirectorTools()
 
 	elseif Input.IsKeyPressed(adjustsidewayskey)
@@ -347,7 +354,6 @@ Event OnUpdate()
 	elseif Input.IsKeyPressed(advancekey)
 		printdebug("Advance key pressed.")
 		if CurrentThread.GetTimeTotal() > LastManualAdvancetime + 3
-			printdebug("Enough time has passed. Advancing to next stage.")
 			AdvancetoNextStage()
 			AddtoTimer(GetTimer())
 			LastManualAdvancetime = CurrentThread.GetTimeTotal()
@@ -368,7 +374,7 @@ Event OnUpdate()
 		DoneLinearSceneOrgasm = true
 		
 	endif
-	printdebug("step 1")
+
 	;======Extended Scene===========
 	if storageutil.getintvalue(None,"HentairimExtendScene",0) == 1 && canAdvance()
 		printdebug("HentairimExtendScene is active.")
@@ -377,7 +383,6 @@ Event OnUpdate()
 		
 		AddtoTimer(GetTimer())
 		printdebug("Timer updated.")
-		UpdateNow = true
 		
 		;extend once
 		if isFinalStage()
@@ -444,10 +449,10 @@ Event OnUpdate()
 		currentSceneID = CurrentThread.GetActiveScene()
 		CurrentStageID = CurrentThread.GetActiveStage()
 		updatelabelsarr(CurrentSceneID, GetLegacyStageNum(CurrentSceneID, CurrentStageID))
+		
 		if enablehentairimscaling == 1 && currentSceneID != CurrentThread.GetActiveScene()
 			ResetScaling()
 			HentairimScaling()
-			
 		EndIf
 		
 		LastLabelUpdateTime = CurrentThread.GetTimeTotal()
@@ -494,7 +499,7 @@ Function AddTrackerToSceneIfApplicable(string argString)
 	
 	
 	if enablesfx == 1
-		int z = 1 ;skip position 0
+		int z = 0
 		while z <= actorList.length
 			if actorList[z].HasSpell(SFXSPELL) 
 				actorList[z].RemoveSpell(SFXSPELL)
@@ -564,18 +569,6 @@ Function AddTrackerToSceneIfApplicable(string argString)
 	endif
 EndFunction
 
-Function RegisterThatSceneIsStarting(Bool maleOnlyScene)
-	;ivdtScenesCurrentlyRunning += 1
-	
-	;If maleOnlyScene
-	;	maleOnlyScenesCurrentlyRunning += 1
-	;EndIf
-	
-	;If ivdtScenesCurrentlyRunning > 0 && ConfigOptions.GetModSettingBool("bMuteSexLabVoices:VoiceSystemManagement")
-	;	SexLabVoices.Mute()
-	;EndIf
-EndFunction
-
 Function RegisterThatSceneIsEnding(Bool maleOnlyScene)
 	;ivdtScenesCurrentlyRunning -= 1
 	
@@ -640,8 +633,8 @@ IVDTVoiceMaleScript Function GetVoiceForActor(Actor actorToVoice)
 	string actorVoiceType = GetNameOfVoiceType(actorToVoice)
 	
 	;Run through all voice slots and check if any have a matching actor or voice type
-	Int currentSlot = 1
-	Int maleVoiceSlots = ConfigOptions.MaleVoiceSlots
+	;Int currentSlot = 1
+	;Int maleVoiceSlots = ConfigOptions.MaleVoiceSlots
 	String temp = ""
 	int EnableReassigningMaleVoice
 
@@ -860,7 +853,8 @@ Function InitializeDirectorConfigs()
 	directortoolskey = JsonUtil.GetIntValue(ControlConfigFile, "directortoolskey" ,0)
 	uselinearscene = JsonUtil.GetIntValue(ControlConfigFile, "uselinearscene" ,0)
 	givingforeplayinlinearscenedontorgasm = JsonUtil.GetIntValue(ControlConfigFile, "givingforeplayinlinearscenedontorgasm" ,0)
-	linearsceneenjoymentendstagetopup = JsonUtil.GetIntValue(ControlConfigFile, "givingforeplayinlinearscenedontorgasm" ,0)
+	linearsceneenjoymentendstagetopup = JsonUtil.GetIntValue(ControlConfigFile, "linearsceneenjoymentendstagetopup" ,0)
+	linearscenechanceforfemaletoorgasmasvictim = JsonUtil.GetIntValue(ControlConfigFile, "linearscenechanceforfemaletoorgasmasvictim" ,0)
 	modifierkey = JsonUtil.GetIntValue(ControlConfigFile, "modifierkey" ,0)
 	adjustforwardkey = JsonUtil.GetIntValue(ControlConfigFile, "adjustforwardkey" ,0)
 	adjustsidewayskey = JsonUtil.GetIntValue(ControlConfigFile, "adjustsidewayskey" ,0)
@@ -1555,36 +1549,6 @@ Function RevertAllActorsSex()
 
 endfunction
 
-Function ResolveStrapon()
-	int z
-	string PAL 
-	while z <= actorList.length
-		if !HasSchlongOrStrapOn(actorList[z]) && (sexlab.GetSex(actorList[z]) == 1 ||  sexlab.GetSex(actorList[z]) == 2)
-			PAL = HentairimTags.PenisActionLabel(CurrentSceneID , GetLegacyStageNum(CurrentSceneID, CurrentStageID) , z)
-			if PAL != "LDI" && !sexlab.WornStrapon(actorList[z])   ; means female actor needs strapon
-				armor Strapon = sexlab.pickstrapon(actorList[z]) as armor
-				;currentthread.SetStrapon(actorList[z],Strapon)
-				debug.notification("adding strapon to" + actorList[z].getdisplayname())
-				actorList[z].addItem(strapon , abSilent=true)
-				actorList[z].EquipItem(strapon , abSilent=true)
-			endIf
-		endIf
-		z += 1
-	endwhile
-endFunction
-
-Function RemoveStrapon()
-	int z
-	while z <= actorList.length
-		armor strapon = sexlab.WornStrapon(actorList[z]) as armor
-		if !strapon && sexlab.getgender(actorList[z]) == 1
-			actorList[z].unEquipItem(strapon , abSilent=true)
-			actorList[z].removeItem(strapon , abSilent=true)
-		endIf
-		z += 1
-	endwhile
-endFunction
-
 Int Timerdebt = 0
 Function AddTimerDebt(int value)
 
@@ -1740,27 +1704,6 @@ Bool function ValidateJsonFile(String Title , string Path)
 	EndIf
 	return true
 EndFunction
-
-
-Bool function HasSchlongOrStrapOn(Actor char)
-
-  if !char
-    return false
-  endif
-  if (schlongfaction)
-    return char.isinfaction(schlongfaction)
-  elseif (TNG_Gentlewoman)
-    if SexLab.GetSex(char) == 1 && !char.HasKeyword(TNG_Gentlewoman)
-      return false ; Female
-    else
-      return true ; Male or Futa
-    endif
-  elseif CurrentThread.IsUsingStrapon(char)
-	return true
-  else
-    return SexLab.GetSex(char) == 0
-  endif
-endfunction
 
 Bool Function AllFemale()
 
@@ -2053,6 +1996,11 @@ EndFunction
 ;---------------------------Director's Utility END------------------------
 
 ;------------------------------Director's Tools START------------------------
+Function ResolveScaling()
+	ResetScaling()
+	HentairimScaling()
+endfunction
+
 String ActionLogsFile  = "ActionLogs/ActionLogs.json"
 
 Function OpenDirectorTools()
@@ -2075,9 +2023,8 @@ Function OpenDirectorTools()
 		;ShowChangePosition()
 		OpenChangeAnimationMenu()
 	elseif result == 2 ; Resolve Scaling
-		int z = 0
-		ResetScaling()
-		HentairimScaling()
+		ResolveScaling()
+		;int z = 0
 		;while z < actorList.length
 		;	actorList[z].SetScale(GetAnimSpecialScaleValue(z))
 		;	z += 1
@@ -2811,7 +2758,7 @@ bool Function TeleportToRandomStageWithTags(String Tags , int StartFromStage = 1
 		return true
 	else
 		printdebug("No Scene Found with Tags : " + Tags)
-		WritetoErrorlogs("No Scene Found with Tags : " + Tags)
+		WritetoErrorlogs("Director", "No Scene Found with Tags : " + Tags)
 		return false
 	endIf
 	
@@ -2859,33 +2806,15 @@ bool Function PCisAggressor()
 	endif
 EndFunction
 
-string Function GetCumTarget(string scene_id) global
-	int stage_nums = SexLabRegistry.GetPathMax(  scene_id, "").Length
-	string text_out =  "->"
-	if stage_nums!=5
-		text_out = "|" + stage_nums + text_out 
-	endif
-	int i = 3
-	string[] targets_of = new string[3]
-	targets_of[0] = "Anal"
-	targets_of[1] = "Vaginal"
-	targets_of[2] = "Oral"
-	while i > 0
-		i -= 1
-		if SexlabRegistry.IsSceneTag(scene_id, targets_of[i])
-			text_out += StringUtil.getNthChar(targets_of[i],0) +" "
-		endif
-	endwhile
-	return text_out
-endFunction
-
-
-
 ; TriggerUpdate for CF to work around penis reverting from SL PP
 function CFTriggerUpdate(actor char)
 	; Get the framework script
 	CreatureFramework CF = Game.GetFormFromFile(0xD62, "CreatureFramework.esm") as CreatureFramework
-	CF.TriggerUpdateForActor(char)
+	if CF
+		CF.TriggerUpdateForActor(char)
+	else
+		WritetoErrorlogs("Director" , "Missing Creature Framework Make sure the Plugin is Enabled or Reinstall.")
+	endif
 endFunction
 
 Function TriggerUpdateforCreatures()
@@ -3018,6 +2947,7 @@ Function ForceOrgasm(actor char)
 	if pos >= 0
 		threadcontroller.ActorAlias[pos].DoOrgasm(true)
 	endif
+
 endfunction
 
 Function LinearEndStageForceOrgasm()
@@ -3035,7 +2965,9 @@ Function LinearEndStageForceOrgasm()
     while i < tmpCummingActorlist.Length
         int enjoy = math.ceiling(CurrentThread.GetEnjoyment(tmpCummingActorlist[i]) as float * GetOrgasmFactor(tmpCummingActorlist[i]))
         PrintDebug("Actor " + i + " initial enjoyment: " + enjoy)
-		if enjoy < 100
+		if Sexlab.GetSex(tmpCummingActorlist[i]) == 1 && IsVictim(tmpCummingActorlist[i]) && utility.randomint(1,100) > linearscenechanceforfemaletoorgasmasvictim
+			enjoy = 0 ; prevent orgasm this time if conditions met
+		elseif enjoy < 100 && linearsceneenjoymentendstagetopup == 1
 			enjoy = 100
 		endif
 		bool CanOrgasm = true
@@ -3249,18 +3181,8 @@ Bool function IshugePP(actor char)
     ;if Schlong is big
     if (SchlongFaction)
       return char.GetFactionRank(SchlongFaction) >= HugePPSchlongSize
-    elseif (TNG_XL)
-      ;keywords can explicitly overwrite value
-      int TNG_Size = TNG_PapyrusUtil.GetActorSize(char)
-      bool tngxl = char.HasKeyword(TNG_XL)
-      bool tngl = char.HasKeyword(TNG_L)
-      bool isBig = tngxl || TNG_Size >= HugePPSchlongSize || tngl
-
-      ;miscutil.PrintConsole ("DEBUG : current TNG_XL : " + tngxl)
-      ;miscutil.PrintConsole ("DEBUG : current TNG_PapyrusUtil.GetActorSize : " + TNG_Size)
-      ;miscutil.PrintConsole ("DEBUG : current TNG_L : " + tngl)
-      ;miscutil.PrintConsole ("DEBUG : current isBig : " + isBig)
-      return isBig
+    elseif Game.GetModbyName("TheNewGentleman.esp") != 255 && TNG_PapyrusUtil.GetActorSize(char) == 4
+      return true
     endif
     return false
   endif
@@ -3281,7 +3203,8 @@ Endfunction
 Float Function GetOrgasmFactor(actor char)
 	
 	string charname = char.getdisplayname()
-	
+	float StorageutilOrgasmFactor = storageutil.GetFloatvalue(char,"HentairimOrgasmFactor",1)
+
 	int z 
 	while z < linearscenefinalstageorgasmfactor.length
 		string[] item = stringutil.split(linearscenefinalstageorgasmfactor[z],"|")
@@ -3291,11 +3214,11 @@ Float Function GetOrgasmFactor(actor char)
 			;display name match keyword. Get Orgasm Factor
 			Float Factor = item[1] as float
 			printdebug("Orgasm Factor :" + Factor)
-			return Factor
+			return Factor * StorageutilOrgasmFactor
 		endif
 		z += 1
 	endWhile
-	return 1
+	return 1 * StorageutilOrgasmFactor
 endFunction
 
 actor function FindFirstActorwithPenisPosition()
@@ -3502,10 +3425,15 @@ endfunction
 
 ;------------------------------Director's Tools END------------------------
 
+;/
+things to do
+cumshot. allow futa cum. look at issue that the cum is shooting from the void
+add more variety to cum sound. Move Gape and cum sound from IVDT to SFX
 
-	
-;v2.0.3
 
-;fix volume SFX
-; add option to toggle between scene or stage offset
-; Add HYbrid Stage Type
+things done
+Add Option chance to prevent orgasm for female as victim
+Support Variation B IVDT Voice Packs
+Fix MFEE Not Running
+FIX IVDT Heavy Gape Sound Not Playing
+/;

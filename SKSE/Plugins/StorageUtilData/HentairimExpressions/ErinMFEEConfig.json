@@ -1,7 +1,7 @@
 {
    "int":{
-      "enablemfeetongue":1,
-      "enablemfeeahegao":1,
+      "enablemfeetongue":0,
+      "enablemfeeahegao":0,
       "ahegaolookupmodifier":50,
       "ahegaophonemebigaah":30,
       "tonguephonemebigaah":65,
